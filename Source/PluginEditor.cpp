@@ -16,7 +16,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     lpcSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     lpcSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
     addAndMakeVisible(lpcSlider);
-    lpcLabel.setText("LPC Mix", juce::dontSendNotification);
+    lpcLabel.setText("Mix", juce::dontSendNotification);
     lpcLabel.attachToComponent(&lpcSlider, false);
     addAndMakeVisible(lpcLabel);
     lpcMixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "lpc mix", lpcSlider);
@@ -52,14 +52,6 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     inputGainLabel.attachToComponent(&inputGainSlider, false);
     addAndMakeVisible(inputGainLabel);
     inputGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "input gain", inputGainSlider);
-
-    outputGainSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    outputGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    addAndMakeVisible(outputGainSlider);
-    outputGainLabel.setText("Output Gain", juce::dontSendNotification);
-    outputGainLabel.attachToComponent(&outputGainSlider, false);
-    addAndMakeVisible(outputGainLabel);
-    outputGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "output gain", outputGainSlider);
     
     excitationDropdown.addItem("BassyTrainNoise", 1);
     excitationDropdown.addItem("CherubScreams", 2);
@@ -78,12 +70,11 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
 
 VoicemorphAudioProcessorEditor::~VoicemorphAudioProcessorEditor()
 {
-    outputGainAttachment.reset();
-    inputGainAttachment.reset();
-    exLenAttachment.reset();
-    lpcMixAttachment.reset();
-    exStartAttachment.reset();
-    orderAttachment.reset();
+//    inputGainAttachment.reset();
+//    exLenAttachment.reset();
+//    lpcMixAttachment.reset();
+//    exStartAttachment.reset();
+//    orderAttachment.reset();
     excitationDropdown.removeListener(this);
 }
 
@@ -105,7 +96,6 @@ void VoicemorphAudioProcessorEditor::resized()
     exStartSlider.setBoundsRelative(0.55, 0.2, 0.2, 0.2);
     orderSlider.setBoundsRelative(0.05, 0.45, 0.2, 0.2);
     inputGainSlider.setBoundsRelative(0.3, 0.45, 0.2, 0.2);
-    outputGainSlider.setBoundsRelative(0.55, 0.45, 0.2, 0.2);
     excitationDropdown.setBoundsRelative(0.05, 0.8, 0.25, 0.05);
 }
 

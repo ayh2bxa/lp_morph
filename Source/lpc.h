@@ -8,13 +8,14 @@ using namespace std;
 
 class LPC {
 private:
-    int FRAMELEN = 882;
+    int FRAMELEN = 442;
     int HOPSIZE = FRAMELEN/2;
     int BUFLEN = 2*FRAMELEN;
     int SAMPLERATE = 44100;
     int MAX_EXLEN = SAMPLERATE/6;
     vector<double> phi;
-    vector<double> a;
+    vector<double> alphas;
+    vector<double> reflections;
     int inPtr;
     int outWtPtr;
     int outRdPtr;
@@ -22,11 +23,12 @@ private:
     int exPtr;
     int histPtr;
     int exCntPtr;
-    double max_amp;
+    float max_amp;
     vector<vector<double>> inBuf;
     vector<double> orderedInBuf;
     vector<vector<double>> outBuf;
     vector<double> window;
+    
     void levinson_durbin();
     double autocorrelate(const vector<double>& x, int lag);
     void reset_a();
@@ -47,9 +49,9 @@ public:
     void set_exlen(int val) {EXLEN = val;};
     int get_exlen() {return EXLEN;};
     int get_max_exlen() {return MAX_EXLEN;};
-    const std::vector<float>* noise = nullptr;
+    const std::vector<double>* noise = nullptr;
     int EXLEN = MAX_EXLEN;
-    int ORDER = 100;
+    int ORDER = 32;
     int exType = 0;
     bool orderChanged = false;
     bool exTypeChanged = false;

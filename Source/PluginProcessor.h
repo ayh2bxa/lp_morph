@@ -68,10 +68,11 @@ public:
     
     AudioProcessorValueTreeState apvts;
 private:
-    
+    float previousGain = 0;
+    float currentGain = 0;
     void loadFactoryExcitations();
     juce::File writeBinaryDataToTempFile(const void* data, int size, const juce::String& fileName);
-    vector<vector<float>> factoryExcitations;
+    vector<vector<double>> factoryExcitations;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessor)
 };

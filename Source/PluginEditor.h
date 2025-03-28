@@ -42,13 +42,10 @@ private:
     juce::Label exStartLabel;
     Slider inputGainSlider;
     Label inputGainLabel;
-    Slider outputGainSlider;
-    Label outputGainLabel;
     Slider orderSlider;
     Label orderLabel;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> inputGainAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> outputGainAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> lpcMixAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exLenAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exStartAttachment;

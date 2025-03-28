@@ -27,7 +27,7 @@ namespace BinaryData
     const int            TrainScreech2_wavSize = 488674;
 
     extern const char*   WhiteNoise_wav;
-    const int            WhiteNoise_wavSize = 325842;
+    const int            WhiteNoise_wavSize = 325704;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
     const int namedResourceListSize = 7;

@@ -19,7 +19,8 @@ LPC::LPC(int numChannels) {
     }
     max_amp = 1;
     phi.resize(ORDER+1);
-    a.resize(ORDER+1);
+    alphas.resize(ORDER+1);
+    reflections.resize(ORDER);
     orderedInBuf.resize(FRAMELEN);
     window.resize(FRAMELEN);
     inBuf.resize(numChannels);
@@ -30,47 +31,48 @@ LPC::LPC(int numChannels) {
         outBuf[ch].resize(BUFLEN);
         out_hist[ch].resize(ORDER);
         for (int i = 0; i < BUFLEN; i++) {
-            inBuf[ch][i] = 0;
-            outBuf[ch][i] = 0;
+            inBuf[ch][i] = 0.0;
+            outBuf[ch][i] = 0.0;
         }
         for (int i = 0; i < ORDER; i++) {
-            out_hist[ch][i] = 0;
+            out_hist[ch][i] = 0.0;
         }
     }
     for (int i = 0; i < FRAMELEN; i++) {
-        window[i] = 0.5f*(1.0f-cosf(2.0*M_PI*i/(float)(FRAMELEN-1)));
+        window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(FRAMELEN-1)));
     }
     for (int i = 0; i < FRAMELEN; i++) {
-        orderedInBuf[i] = 0;
+        orderedInBuf[i] = 0.0;
     }
     for (int i = 0; i < ORDER; i++) {
-        phi[i] = 0;
+        phi[i] = 0.0;
     }
-    phi[ORDER] = 0;
+    phi[ORDER] = 0.0;
     reset_a();
 }
 
 void LPC::levinson_durbin() {
     reset_a();
-    a[0] = 1;
     double E = phi[0];
     for (int k = 0; k < ORDER; k++) {
-        double lbda = 0;
-        for (int j = 0; j < k+1; j++) {
-            lbda -= a[j]*phi[k+1-j];
+        double lbda = 0.0;
+        for (int j = 0; j <= k; j++) {
+            lbda += alphas[j] * phi[k + 1 - j];
         }
-        lbda /= E;
-        for (int n = 0; n < 1+(k+1)/2; n++) {
-            double tmp = a[k+1-n]+lbda*a[n];
-            a[n] += lbda*a[k+1-n];
-            a[k+1-n] = tmp;
+        lbda = -lbda / E;
+        reflections[k] = lbda;
+        int half = (k + 1) / 2;
+        for (int n = 0; n <= half; n++) {
+            double tmp = alphas[k + 1 - n] + lbda * alphas[n];
+            alphas[n] += lbda * alphas[k + 1 - n];
+            alphas[k + 1 - n] = tmp;
         }
-        E *= (1-lbda*lbda);
+        E *= (1.0 - lbda * lbda);
     }
 }
 
 double LPC::autocorrelate(const vector<double>& x, int lag) {
-    double res = 0;
+    double res = 0.0;
     for (int n = 0; n < x.size()-lag; n++) {
         res += x[n]*x[n+lag];
     }
@@ -91,7 +93,7 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
         for (int i = 0; i < out_hist[ch].size(); i++) {
             out_hist[ch][i] = 0;
         }
-//        histPtrs[ch] = 0;
+        histPtrs[ch] = 0;
     }
     exPtr = exPtrs[ch];
     exCntPtr = exCntPtrs[ch];
@@ -104,7 +106,8 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
             inPtr = 0;
         }
         float out = outBuf[ch][outRdPtr];
-        inout[s] = lpcMix*out+(1-lpcMix)*inout[s];
+        float in = inout[s];
+        inout[s] = lpcMix*out+(1-lpcMix)*in;
         outBuf[ch][outRdPtr] = 0;
         outRdPtr++;
         if (outRdPtr >= BUFLEN) {
@@ -112,7 +115,6 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
         }
         smpCnt++;
         if (smpCnt >= HOPSIZE) {
-            max_amp = 1;
             smpCnt = 0;
             for (int i = 0; i < FRAMELEN; i++) {
                 int inBufIdx = (inPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
@@ -123,22 +125,15 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
             }
             if (phi[0] != 0) {
                 levinson_durbin();
-                double err = 0;
-                for (int n = 0; n < FRAMELEN; n++) {
-                    double residual = orderedInBuf[n];
-                    double x_hat_n = 0;
-                    for (int k = 1; k <= ORDER; k++) {
-                        if (n-k >= 0) {
-                            x_hat_n += a[k]*orderedInBuf[n-k];
-                        }
-                    }
-                    residual -= x_hat_n;
-                    residual *= residual;
-                    err += residual;
+                double G = phi[0];
+                for (int k = 0; k < ORDER; k++) {
+                    G -= alphas[k+1]*phi[k+1];
                 }
-                double G = sqrt(err/ORDER)/FRAMELEN;
+                double oldG = G;
+                G = sqrt(G);
                 for (int n = 0; n < FRAMELEN; n++) {
                     double ex = (*noise)[exPtr];
+                    int exPtrDBG = exPtr;
                     exPtr++;
                     exCntPtr++;
                     if (exCntPtr >= (int)(exPercentage*EXLEN)) {
@@ -150,23 +145,21 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
                     }
                     double out_n = G*ex;
                     for (int k = 0; k < ORDER; k++) {
-                        int idx = histPtr-k-1;
-                        if (idx < 0) {
-                            idx += ORDER;
-                        }
-                        out_n -= a[k+1]*out_hist[ch][idx];
+                        int idx = (histPtr+k)%ORDER;
+                        out_n -= alphas[k+1]*out_hist[ch][idx];
+                    }
+                    histPtr--;
+                    if (histPtr < 0) {
+                        histPtr += ORDER;
                     }
                     out_hist[ch][histPtr] = out_n;
-                    histPtr++;
-                    if (histPtr >= ORDER) {
-                        histPtr = 0;
-                    }
-                    unsigned long wtIdx = outWtPtr+n;
-                    if (wtIdx >= BUFLEN) {
-                        wtIdx -= BUFLEN;
-                    }
+                    unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
                     outBuf[ch][wtIdx] += out_n;
                 }
+                for (int i = 0; i < out_hist[ch].size(); i++) {
+                    out_hist[ch][i] = 0;
+                }
+                histPtrs[ch] = 0;
                 outWtPtr += HOPSIZE;
                 if (outWtPtr >= BUFLEN) {
                     outWtPtr -= BUFLEN;
@@ -183,7 +176,8 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
 }
 
 void LPC::reset_a() {
-    for (int i = 0; i < ORDER+1; i++) {
-        a[i] = 0;
+    alphas[0] = 1.0;
+    for (int i = 1; i < ORDER+1; i++) {
+        alphas[i] = 0.0;
     }
 }
