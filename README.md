@@ -1,6 +1,6 @@
 # LP Morph (Work in Progress)
 
-### [### Plugin Demo](https://drive.google.com/file/d/1PZ8PmsiGHm-4qqMvpU1HNK3sbAYAznpV/view?usp=sharing)
+### [Plugin Demo](https://drive.google.com/file/d/1PZ8PmsiGHm-4qqMvpU1HNK3sbAYAznpV/view?usp=sharing)
 
 ### Background
 
