@@ -29,76 +29,44 @@ VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
 }
 
 // Function to load a WAV file into a vector<float>
-std::vector<double> loadWavToBuffer(const juce::File& file)
+std::vector<double> loadEmbeddedWavToBuffer(const void* data, size_t dataSize)
 {
-    // Check if the file exists
-    if (!file.existsAsFile())
-    {
-        DBG("File not found: " + file.getFullPathName());
-        return {};
-    }
-    // Step 1: Register the available audio formats (WAV, AIFF, etc.)
-    juce::AudioFormatManager formatManager;
-    formatManager.registerBasicFormats();
-
-    // Step 2: Create an AudioFormatReader for the file
-    std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
-    if (reader == nullptr)
-    {
-        // Failed to open file; return an empty vector
-        return {};
-    }
-
-    // Step 3: Create an AudioBuffer to hold the samples.
-    // reader->lengthInSamples gives the total number of samples per channel.
-    const int numChannels = static_cast<int>(reader->numChannels);
-    const int numSamples = static_cast<int>(reader->lengthInSamples);
-    juce::AudioBuffer<float> buffer(numChannels, numSamples);
-
-    // Read the samples into the buffer.
-    reader->read(&buffer,           // destination buffer
-                 0,                 // start writing at sample 0 in the buffer
-                 numSamples,        // number of samples to read
-                 0,                 // starting sample in the source file
-                 true,              // use left channel if numChannels < expected?
-                 true);             // use right channel
-
-    // Step 4: Convert AudioBuffer data to a single vector<float>.
-    // In this example, we average the samples across all channels.
-    std::vector<double> audioData(numSamples, 0.0f);
-    for (int sample = 0; sample < numSamples; ++sample)
-    {
-        double mixedSample = 0.0f;
-        for (int channel = 0; channel < numChannels; ++channel)
+    if (data != nullptr && dataSize > 0) {
+        size_t numSamples = dataSize / 2;
+        const int16_t* sampleData = static_cast<const int16_t*>(data);
+        std::vector<double> samples;
+        samples.reserve(numSamples);
+        for (size_t i = 0; i < numSamples; ++i)
         {
-            mixedSample += static_cast<double>(buffer.getReadPointer(channel)[sample]);
+            samples.push_back(static_cast<double>(sampleData[i]) / 32768.0);
         }
-        audioData[sample] = mixedSample / numChannels;
+        return samples;
     }
-    return audioData;
+    return {};
 }
 
 void VoicemorphAudioProcessor::loadFactoryExcitations() {
-    juce::File bassyTrainFile{"/Users/anthony/Desktop/Careers/portfolio/linear_predictive_coding/resources/excitations/BassyTrainNoise.wav"};
-    factoryExcitations.push_back(loadWavToBuffer(bassyTrainFile));
+    auto bassyTrainAudio = loadEmbeddedWavToBuffer(BinaryData::BassyTrainNoise_wav_bin, BinaryData::BassyTrainNoise_wav_binSize);
+    factoryExcitations.push_back(bassyTrainAudio);
     
-    juce::File cherubScreamsFile{"/Users/anthony/Desktop/Careers/portfolio/linear_predictive_coding/resources/excitations/CherubScreams.wav"};
-    factoryExcitations.push_back(loadWavToBuffer(cherubScreamsFile));
+    auto cherubScreamsAudio = loadEmbeddedWavToBuffer(BinaryData::CherubScreams_wav_bin, BinaryData::CherubScreams_wav_binSize);
+    factoryExcitations.push_back(cherubScreamsAudio);
     
-    juce::File micScratchFile{"/Users/anthony/Desktop/Careers/portfolio/linear_predictive_coding/resources/excitations/MicScratch.wav"};
-    factoryExcitations.push_back(loadWavToBuffer(micScratchFile));
+    auto micScratchAudio = loadEmbeddedWavToBuffer(BinaryData::MicScratch_wav_bin, BinaryData::MicScratch_wav_binSize);
+    factoryExcitations.push_back(micScratchAudio);
     
-    juce::File ringFile{"/Users/anthony/Desktop/Careers/portfolio/linear_predictive_coding/resources/excitations/Ring.wav"};
-    factoryExcitations.push_back(loadWavToBuffer(ringFile));
+    auto ringAudio = loadEmbeddedWavToBuffer(BinaryData::Ring_wav_bin, BinaryData::Ring_wav_binSize);
+    factoryExcitations.push_back(ringAudio);
     
-    juce::File trainScreech1File{"/Users/anthony/Desktop/Careers/portfolio/linear_predictive_coding/resources/excitations/TrainScreech1.wav"};
-    factoryExcitations.push_back(loadWavToBuffer(trainScreech1File));
+    auto trainScreech1Audio = loadEmbeddedWavToBuffer(BinaryData::TrainScreech1_wav_bin, BinaryData::TrainScreech1_wav_binSize);
+    factoryExcitations.push_back(trainScreech1Audio);
     
-    juce::File trainScreech2File{"/Users/anthony/Desktop/Careers/portfolio/linear_predictive_coding/resources/excitations/TrainScreech2.wav"};
-    factoryExcitations.push_back(loadWavToBuffer(trainScreech2File));
+    auto trainScreech2Audio = loadEmbeddedWavToBuffer(BinaryData::TrainScreech2_wav_bin, BinaryData::TrainScreech2_wav_binSize);
+    factoryExcitations.push_back(trainScreech2Audio);
     
-    juce::File whiteNoiseFile{"/Users/anthony/Desktop/Careers/portfolio/linear_predictive_coding/resources/excitations/WhiteNoise.wav"};
-    factoryExcitations.push_back(loadWavToBuffer(whiteNoiseFile));
+    auto whiteNoiseAudio = loadEmbeddedWavToBuffer(BinaryData::WhiteNoise_wav_bin, BinaryData::WhiteNoise_wav_binSize);
+    factoryExcitations.push_back(whiteNoiseAudio);
+
     lpc.noise = &factoryExcitations[6];
 }
 

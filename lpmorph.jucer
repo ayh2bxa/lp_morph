@@ -4,17 +4,19 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginFormats="buildAU,buildStandalone,buildVST3">
   <MAINGROUP id="VWmoNi" name="LP Morph">
     <GROUP id="{FED7F6C3-73D4-9EC1-4D20-25D4D9A542D5}" name="Binary">
-      <FILE id="X6DcgA" name="BassyTrainNoise.wav" compile="0" resource="1"
-            file="resources/excitations/BassyTrainNoise.wav"/>
-      <FILE id="d4X2ue" name="CherubScreams.wav" compile="0" resource="1"
-            file="resources/excitations/CherubScreams.wav"/>
-      <FILE id="SqDvT1" name="MicScratch.wav" compile="0" resource="1" file="resources/excitations/MicScratch.wav"/>
-      <FILE id="el5Jpv" name="Ring.wav" compile="0" resource="1" file="resources/excitations/Ring.wav"/>
-      <FILE id="p7DKlI" name="TrainScreech1.wav" compile="0" resource="1"
-            file="resources/excitations/TrainScreech1.wav"/>
-      <FILE id="CelGjB" name="TrainScreech2.wav" compile="0" resource="1"
-            file="resources/excitations/TrainScreech2.wav"/>
-      <FILE id="Pu87cs" name="WhiteNoise.wav" compile="0" resource="1" file="resources/excitations/WhiteNoise.wav"/>
+      <FILE id="YbGfYs" name="BassyTrainNoise.wav.bin" compile="0" resource="1"
+            file="resources/excitations/BassyTrainNoise.wav.bin"/>
+      <FILE id="DibrXf" name="CherubScreams.wav.bin" compile="0" resource="1"
+            file="resources/excitations/CherubScreams.wav.bin"/>
+      <FILE id="dezcja" name="MicScratch.wav.bin" compile="0" resource="1"
+            file="resources/excitations/MicScratch.wav.bin"/>
+      <FILE id="MJMb8l" name="Ring.wav.bin" compile="0" resource="1" file="resources/excitations/Ring.wav.bin"/>
+      <FILE id="J04BfY" name="TrainScreech1.wav.bin" compile="0" resource="1"
+            file="resources/excitations/TrainScreech1.wav.bin"/>
+      <FILE id="GkmNNr" name="TrainScreech2.wav.bin" compile="0" resource="1"
+            file="resources/excitations/TrainScreech2.wav.bin"/>
+      <FILE id="Gm8BEF" name="WhiteNoise.wav.bin" compile="0" resource="1"
+            file="resources/excitations/WhiteNoise.wav.bin"/>
     </GROUP>
     <GROUP id="{73B871AB-B02B-B249-5D06-C6AC51ACE11E}" name="Source">
       <FILE id="VQ7TFi" name="ParameterHelper.h" compile="0" resource="0"

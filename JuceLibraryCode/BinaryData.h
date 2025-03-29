@@ -8,26 +8,26 @@
 
 namespace BinaryData
 {
-    extern const char*   BassyTrainNoise_wav;
-    const int            BassyTrainNoise_wavSize = 306106;
+    extern const char*   BassyTrainNoise_wav_bin;
+    const int            BassyTrainNoise_wav_binSize = 81416;
 
-    extern const char*   CherubScreams_wav;
-    const int            CherubScreams_wavSize = 203722;
+    extern const char*   CherubScreams_wav_bin;
+    const int            CherubScreams_wav_binSize = 101770;
 
-    extern const char*   MicScratch_wav;
-    const int            MicScratch_wavSize = 81598;
+    extern const char*   MicScratch_wav_bin;
+    const int            MicScratch_wav_binSize = 40708;
 
-    extern const char*   Ring_wav;
-    const int            Ring_wavSize = 61242;
+    extern const char*   Ring_wav_bin;
+    const int            Ring_wav_binSize = 30530;
 
-    extern const char*   TrainScreech1_wav;
-    const int            TrainScreech1_wavSize = 407258;
+    extern const char*   TrainScreech1_wav_bin;
+    const int            TrainScreech1_wav_binSize = 203538;
 
-    extern const char*   TrainScreech2_wav;
-    const int            TrainScreech2_wavSize = 488674;
+    extern const char*   TrainScreech2_wav_bin;
+    const int            TrainScreech2_wav_binSize = 244246;
 
-    extern const char*   WhiteNoise_wav;
-    const int            WhiteNoise_wavSize = 325704;
+    extern const char*   WhiteNoise_wav_bin;
+    const int            WhiteNoise_wav_binSize = 162830;
 
     // Number of elements in the namedResourceList and originalFileNames arrays.
     const int namedResourceListSize = 7;

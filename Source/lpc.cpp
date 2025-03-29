@@ -129,11 +129,9 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
                 for (int k = 0; k < ORDER; k++) {
                     G -= alphas[k+1]*phi[k+1];
                 }
-                double oldG = G;
                 G = sqrt(G);
                 for (int n = 0; n < FRAMELEN; n++) {
                     double ex = (*noise)[exPtr];
-                    int exPtrDBG = exPtr;
                     exPtr++;
                     exCntPtr++;
                     if (exCntPtr >= (int)(exPercentage*EXLEN)) {
