@@ -137,7 +137,7 @@ void VoicemorphAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    previousGain = apvts.getParameterAsValue("input gain").getValue();
+    previousGain = apvts.getParameterAsValue("gain").getValue();
     previousGain = juce::Decibels::decibelsToGain(previousGain);
 }
 
@@ -191,7 +191,7 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     lpc.ORDER = apvts.getParameterAsValue("lpc order").getValue();
     lpc.orderChanged = prevOrder != lpc.ORDER;
     lpc.exTypeChanged = prevExType != lpc.exType;
-    currentGain = apvts.getParameterAsValue("input gain").getValue();
+    currentGain = apvts.getParameterAsValue("gain").getValue();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
     for (int ch = 0; ch < totalNumOutputChannels; ch++) {
         auto *channelData = buffer.getWritePointer(ch);

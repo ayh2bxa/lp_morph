@@ -48,10 +48,10 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     inputGainSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     inputGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
     addAndMakeVisible(inputGainSlider);
-    inputGainLabel.setText("Input Gain", juce::dontSendNotification);
+    inputGainLabel.setText("Gain", juce::dontSendNotification);
     inputGainLabel.attachToComponent(&inputGainSlider, false);
     addAndMakeVisible(inputGainLabel);
-    inputGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "input gain", inputGainSlider);
+    inputGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "gain", inputGainSlider);
     
     excitationDropdown.addItem("BassyTrainNoise", 1);
     excitationDropdown.addItem("CherubScreams", 2);

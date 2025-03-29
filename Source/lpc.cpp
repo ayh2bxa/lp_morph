@@ -51,6 +51,7 @@ LPC::LPC(int numChannels) {
     reset_a();
 }
 
+//http://www.emptyloop.com/technotes/A%20tutorial%20on%20linear%20prediction%20and%20Levinson-Durbin.pdf
 void LPC::levinson_durbin() {
     reset_a();
     double E = phi[0];
