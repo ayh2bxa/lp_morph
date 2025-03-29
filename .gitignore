@@ -1,2 +1,4 @@
 Builds/
 *.wav
+*.bin
+JuceLibraryCode/BinaryData.*
