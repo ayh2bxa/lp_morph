@@ -18,10 +18,16 @@ VoicemorphAudioProcessor::VoicemorphAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ), 
-lpc(2), apvts(*this, nullptr, "Parameters", Utility::ParameterHelper::createParameterLayout())
+lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::ParameterHelper::createParameterLayout())
 #endif
 {
     loadFactoryExcitations();
+    exLenParameter = apvts.getRawParameterValue ("ex len");
+    gainParameter = apvts.getRawParameterValue ("gain");
+    lpcMixParameter = apvts.getRawParameterValue ("lpc mix");
+    lpcExStartParameter = apvts.getRawParameterValue ("ex start pos");
+    lpcOrderParameter = apvts.getRawParameterValue ("lpc order");
+    lpcExTypeParameter = apvts.getRawParameterValue ("ex type");
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
@@ -137,7 +143,7 @@ void VoicemorphAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    previousGain = apvts.getParameterAsValue("gain").getValue();
+    previousGain = (*gainParameter).load();
     previousGain = juce::Decibels::decibelsToGain(previousGain);
 }
 
@@ -180,18 +186,16 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-    float lpcMix = apvts.getParameterAsValue("lpc mix").getValue();
-    float percentage = apvts.getParameterAsValue("ex len").getValue();
-    float exStartPos = apvts.getParameterAsValue("ex start pos").getValue();
+    float exStartPos = (*lpcExStartParameter).load();
     int prevExType = lpc.exType;
-    lpc.exType = apvts.getParameterAsValue("ex type").getValue();
+    lpc.exType = static_cast<int>((*lpcExTypeParameter).load());
     lpc.noise = &factoryExcitations[lpc.exType];
     lpc.EXLEN = (*lpc.noise).size();
     int prevOrder = lpc.ORDER;
-    lpc.ORDER = apvts.getParameterAsValue("lpc order").getValue();
+    lpc.ORDER = static_cast<int>((*lpcOrderParameter).load());
     lpc.orderChanged = prevOrder != lpc.ORDER;
     lpc.exTypeChanged = prevExType != lpc.exType;
-    currentGain = apvts.getParameterAsValue("gain").getValue();
+    currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
     for (int ch = 0; ch < totalNumOutputChannels; ch++) {
         auto *channelData = buffer.getWritePointer(ch);
@@ -202,7 +206,7 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             buffer.applyGainRamp(0, buffer.getNumSamples(), previousGain, currentGain);
             previousGain = currentGain;
         }
-        lpc.applyLPC(channelData, buffer.getNumSamples(), lpcMix, percentage, ch, exStartPos);
+        lpc.applyLPC(channelData, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, exStartPos);
     }
 }
 

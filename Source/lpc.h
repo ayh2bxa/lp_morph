@@ -55,4 +55,5 @@ public:
     int exType = 0;
     bool orderChanged = false;
     bool exTypeChanged = false;
+    double factor = 1.0;
 };

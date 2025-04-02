@@ -19,7 +19,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     lpcLabel.setText("Mix", juce::dontSendNotification);
     lpcLabel.attachToComponent(&lpcSlider, false);
     addAndMakeVisible(lpcLabel);
-    lpcMixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "lpc mix", lpcSlider);
+    lpcMixAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpc mix", lpcSlider));
     
     exLenSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     exLenSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -27,7 +27,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     exLenLabel.setText("Length", juce::dontSendNotification);
     exLenLabel.attachToComponent(&exLenSlider, false);
     addAndMakeVisible(exLenLabel);
-    exLenAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "ex len", exLenSlider);
+    exLenAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "ex len", exLenSlider));
 
     exStartSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     exStartSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -35,7 +35,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     exStartLabel.setText("Start", juce::dontSendNotification);
     exStartLabel.attachToComponent(&exStartSlider, false);
     addAndMakeVisible(exStartLabel);
-    exStartAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "ex start pos", exStartSlider);
+    exStartAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "ex start pos", exStartSlider));
     
     orderSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     orderSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -43,7 +43,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     orderLabel.setText("Order", juce::dontSendNotification);
     orderLabel.attachToComponent(&orderSlider, false);
     addAndMakeVisible(orderLabel);
-    orderAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "lpc order", orderSlider);
+    exStartAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpc order", orderSlider));
     
     inputGainSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     inputGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -51,7 +51,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     inputGainLabel.setText("Gain", juce::dontSendNotification);
     inputGainLabel.attachToComponent(&inputGainSlider, false);
     addAndMakeVisible(inputGainLabel);
-    inputGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(vts, "gain", inputGainSlider);
+    inputGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "gain", inputGainSlider));
     
     excitationDropdown.addItem("BassyTrainNoise", 1);
     excitationDropdown.addItem("CherubScreams", 2);
@@ -70,11 +70,6 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
 
 VoicemorphAudioProcessorEditor::~VoicemorphAudioProcessorEditor()
 {
-//    inputGainAttachment.reset();
-//    exLenAttachment.reset();
-//    lpcMixAttachment.reset();
-//    exStartAttachment.reset();
-//    orderAttachment.reset();
     excitationDropdown.removeListener(this);
 }
 
@@ -97,12 +92,6 @@ void VoicemorphAudioProcessorEditor::resized()
     orderSlider.setBoundsRelative(0.05, 0.45, 0.2, 0.2);
     inputGainSlider.setBoundsRelative(0.3, 0.45, 0.2, 0.2);
     excitationDropdown.setBoundsRelative(0.05, 0.8, 0.25, 0.05);
-}
-
-void VoicemorphAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
-{
-    // Handle slider change events if needed
-    // For now, you can leave it empty
 }
 
 void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)

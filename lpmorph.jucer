@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="V2DtJy" name="LP Morph" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginFormats="buildAU,buildStandalone,buildVST3">
-  <MAINGROUP id="VWmoNi" name="LP Morph">
+<JUCERPROJECT id="V2DtJy" name="LPMorph" projectType="audioplug" useAppConfig="0"
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginFormats="buildAU,buildStandalone,buildVST3"
+              cppLanguageStandard="20">
+  <MAINGROUP id="VWmoNi" name="LPMorph">
     <GROUP id="{FED7F6C3-73D4-9EC1-4D20-25D4D9A542D5}" name="Binary">
       <FILE id="YbGfYs" name="BassyTrainNoise.wav.bin" compile="0" resource="1"
             file="resources/excitations/BassyTrainNoise.wav.bin"/>
@@ -41,8 +42,8 @@
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" microphonePermissionNeeded="1">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="LP Morph" optimisation="1"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="LP Morph" optimisation="1"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="LPMorph" optimisation="1"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="LPMorph" optimisation="1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../../Documents/JUCE/modules"/>

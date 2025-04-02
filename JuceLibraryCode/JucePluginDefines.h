@@ -41,10 +41,10 @@
  #define JucePlugin_Enable_ARA             0
 #endif
 #ifndef  JucePlugin_Name
- #define JucePlugin_Name                   "LP Morph"
+ #define JucePlugin_Name                   "LPMorph"
 #endif
 #ifndef  JucePlugin_Desc
- #define JucePlugin_Desc                   "LP Morph"
+ #define JucePlugin_Desc                   "LPMorph"
 #endif
 #ifndef  JucePlugin_Manufacturer
  #define JucePlugin_Manufacturer           "yourcompany"
@@ -137,7 +137,7 @@
  #define JucePlugin_IAASubType             JucePlugin_PluginCode
 #endif
 #ifndef  JucePlugin_IAAName
- #define JucePlugin_IAAName                "yourcompany: LP Morph"
+ #define JucePlugin_IAAName                "yourcompany: LPMorph"
 #endif
 #ifndef  JucePlugin_VSTNumMidiInputs
  #define JucePlugin_VSTNumMidiInputs       16

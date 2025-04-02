@@ -73,6 +73,12 @@ private:
     void loadFactoryExcitations();
     juce::File writeBinaryDataToTempFile(const void* data, int size, const juce::String& fileName);
     vector<vector<double>> factoryExcitations;
+    std::atomic<float>* exLenParameter  = nullptr;
+    std::atomic<float>* gainParameter  = nullptr;
+    std::atomic<float>* lpcMixParameter  = nullptr;
+    std::atomic<float>* lpcOrderParameter  = nullptr;
+    std::atomic<float>* lpcExStartParameter  = nullptr;
+    std::atomic<float>* lpcExTypeParameter  = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessor)
 };

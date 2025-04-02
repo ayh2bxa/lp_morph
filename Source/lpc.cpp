@@ -108,7 +108,7 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
         }
         float out = outBuf[ch][outRdPtr];
         float in = inout[s];
-        inout[s] = lpcMix*out+(1-lpcMix)*in;
+        inout[s] = lpcMix*factor*out+(1-lpcMix)*in;
         outBuf[ch][outRdPtr] = 0;
         outRdPtr++;
         if (outRdPtr >= BUFLEN) {
@@ -117,10 +117,14 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
         smpCnt++;
         if (smpCnt >= HOPSIZE) {
             smpCnt = 0;
+            double rms_in = 0.0;
             for (int i = 0; i < FRAMELEN; i++) {
                 int inBufIdx = (inPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
-                orderedInBuf[i] = window[i]*inBuf[ch][inBufIdx];
+                double smp = inBuf[ch][inBufIdx];
+                orderedInBuf[i] = window[i]*smp;
+                rms_in += smp*smp;
             }
+            rms_in = sqrt(rms_in/FRAMELEN);
             for (int lag = 0; lag < ORDER+1; lag++) {
                 phi[lag] = autocorrelate(orderedInBuf, lag);
             }
@@ -131,6 +135,7 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
                     G -= alphas[k+1]*phi[k+1];
                 }
                 G = sqrt(G);
+                double rms_out = 0.0;
                 for (int n = 0; n < FRAMELEN; n++) {
                     double ex = (*noise)[exPtr];
                     exPtr++;
@@ -154,7 +159,10 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
                     out_hist[ch][histPtr] = out_n;
                     unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
                     outBuf[ch][wtIdx] += out_n;
+                    rms_out += outBuf[ch][wtIdx]*outBuf[ch][wtIdx];
                 }
+                rms_out = sqrt(rms_out/FRAMELEN);
+                factor = rms_in/rms_out;
                 for (int i = 0; i < out_hist[ch].size(); i++) {
                     out_hist[ch][i] = 0;
                 }
