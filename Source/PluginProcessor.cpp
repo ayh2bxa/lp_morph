@@ -28,6 +28,7 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     lpcExStartParameter = apvts.getRawParameterValue ("ex start pos");
     lpcOrderParameter = apvts.getRawParameterValue ("lpc order");
     lpcExTypeParameter = apvts.getRawParameterValue ("ex type");
+    matchInLevelParameter = apvts.getRawParameterValue ("match in rms");
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
@@ -195,18 +196,20 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     lpc.ORDER = static_cast<int>((*lpcOrderParameter).load());
     lpc.orderChanged = prevOrder != lpc.ORDER;
     lpc.exTypeChanged = prevExType != lpc.exType;
+    lpc.exStartChanged = lpc.exStart != exStartPos;
+    lpc.matchInLevel = static_cast<bool>((*matchInLevelParameter).load());
     currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
     for (int ch = 0; ch < totalNumOutputChannels; ch++) {
         auto *channelData = buffer.getWritePointer(ch);
-        if (juce::approximatelyEqual(currentGain, previousGain)) {
-            buffer.applyGain(currentGain);
-        }
-        else {
-            buffer.applyGainRamp(0, buffer.getNumSamples(), previousGain, currentGain);
-            previousGain = currentGain;
-        }
         lpc.applyLPC(channelData, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, exStartPos);
+    }
+    if (juce::approximatelyEqual(currentGain, previousGain)) {
+        buffer.applyGain(currentGain);
+    }
+    else {
+        buffer.applyGainRamp(0, buffer.getNumSamples(), previousGain, currentGain);
+        previousGain = currentGain;
     }
 }
 

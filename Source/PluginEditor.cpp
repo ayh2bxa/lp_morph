@@ -53,6 +53,10 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(inputGainLabel);
     inputGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "gain", inputGainSlider));
     
+    matchInLevelButton.setButtonText ("Match Input RMS");
+    addAndMakeVisible(matchInLevelButton);
+    matchInLevelAttachment.reset (new juce::AudioProcessorValueTreeState::ButtonAttachment (vts, "match in rms", matchInLevelButton));
+    
     excitationDropdown.addItem("BassyTrainNoise", 1);
     excitationDropdown.addItem("CherubScreams", 2);
     excitationDropdown.addItem("MicScratch", 3);
@@ -91,6 +95,7 @@ void VoicemorphAudioProcessorEditor::resized()
     exStartSlider.setBoundsRelative(0.55, 0.2, 0.2, 0.2);
     orderSlider.setBoundsRelative(0.05, 0.45, 0.2, 0.2);
     inputGainSlider.setBoundsRelative(0.3, 0.45, 0.2, 0.2);
+    matchInLevelButton.setBoundsRelative(0.55, 0.45, 0.2, 0.2);
     excitationDropdown.setBoundsRelative(0.05, 0.8, 0.25, 0.05);
 }
 

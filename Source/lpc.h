@@ -55,5 +55,7 @@ public:
     int exType = 0;
     bool orderChanged = false;
     bool exTypeChanged = false;
-    double factor = 1.0;
+    bool matchInLevel = true;
+    bool exStartChanged = false;
+    float exStart = 0.f;
 };

@@ -43,12 +43,14 @@ private:
     Label inputGainLabel;
     Slider orderSlider;
     Label orderLabel;
+    juce::ToggleButton matchInLevelButton;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> inputGainAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> lpcMixAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exLenAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exStartAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> orderAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> matchInLevelAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };
