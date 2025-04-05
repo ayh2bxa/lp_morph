@@ -80,6 +80,7 @@ private:
     std::atomic<float>* lpcExStartParameter  = nullptr;
     std::atomic<float>* lpcExTypeParameter  = nullptr;
     std::atomic<float>* matchInLevelParameter  = nullptr;
+    std::atomic<float>* frameDurParameter  = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessor)
 };

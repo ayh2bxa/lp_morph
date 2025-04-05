@@ -1,6 +1,6 @@
 # LP Morph (Work in Progress)
 
-### [Plugin Demo](https://drive.google.com/file/d/1PZ8PmsiGHm-4qqMvpU1HNK3sbAYAznpV/view?usp=sharing)
+### [Plugin Demo](https://drive.google.com/file/d/1pSDDkjCGImsYZ_IlyGU_NulDk03rHYPb/view?usp=sharinghttps://drive.google.com/file/d/1PZ8PmsiGHm-4qqMvpU1HNK3sbAYAznpV/view?usp=sharing)
 
 ### Background
 
@@ -12,13 +12,17 @@ From the input speech signal, LPC derives a set of coefficients to represent its
 
 But what if the input is not restricted to voice, but can also be drums, or synths, or any other sounds? Although linear prediction cannot accurately model every acoustic system as it does our vocal tracts, the unpredictability of its modelling ability on non-speech audio gives it artistic potential, which is the key motivation behind building this plugin.
 
-LP Morph applies real-time LPC to input audio, and allows control of the following parameters:![1743216301964.png](./1743216301964.png)
+LP Morph applies real-time LPC to input audio, and allows control of the following parameters:
+
+ ![1743819241084.png](./1743819241084.png)
 
 1. Mix: controls the dry/wet percentage of LPC effect.
 2. Order: the number of coefficients used to characterise the input. Higher order means greater resolution.
-3. Gain: controls the volume in dB. LPC tends to produce noticeably louder output, this helps prevent clipping.
-4. Dropdown menu: features a variety of excitation signals, including white noise, ring tone, kid screaming, train, and more. All sounds are produced or recorded by myself.
-5. Length: controls the length of excitation signal that's actually being used in output synthesis. When the length is small, you will hear a strong pitch component in the output, because the same excitation samples are being looped in a small period.
-6. Start: determines the position (in fraction) of excitation to start processing.
+3. Frame Duration: determines how many input samples (in milliseconds) to use for LPC processing.
+4. Gain: controls the volume in dB. LPC tends to produce noticeably louder output, this helps prevent clipping.
+5. Dropdown menu: features a variety of excitation signals, including white noise, ring tone, kid screaming, train, and more. All sounds are produced or recorded by myself.
+6. Length: controls the length of excitation signal that's actually being used in output synthesis. When the length is small, you will hear a strong pitch component in the output, because the same excitation samples are being looped in a small period.
+7. Start: determines the position (in fraction) of excitation to start processing.
+8. Match Input RMS: scale the output to match input's RMS level. This may produce choppy audio as each input frame has a different RMS level.
 
 For a more straightforward explanation, see the demo linked on top.

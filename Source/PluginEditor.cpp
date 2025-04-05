@@ -43,7 +43,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     orderLabel.setText("Order", juce::dontSendNotification);
     orderLabel.attachToComponent(&orderSlider, false);
     addAndMakeVisible(orderLabel);
-    exStartAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpc order", orderSlider));
+    orderAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpc order", orderSlider));
     
     inputGainSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     inputGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -52,6 +52,14 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     inputGainLabel.attachToComponent(&inputGainSlider, false);
     addAndMakeVisible(inputGainLabel);
     inputGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "gain", inputGainSlider));
+    
+    frameDurSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    frameDurSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
+    addAndMakeVisible(frameDurSlider);
+    frameDurLabel.setText("Frame Duration (ms)", juce::dontSendNotification);
+    frameDurLabel.attachToComponent(&frameDurSlider, false);
+    addAndMakeVisible(frameDurLabel);
+    frameDurAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "frame dur", frameDurSlider));
     
     matchInLevelButton.setButtonText ("Match Input RMS");
     addAndMakeVisible(matchInLevelButton);
@@ -90,13 +98,14 @@ void VoicemorphAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
-    lpcSlider.setBoundsRelative(0.05, 0.2, 0.2, 0.2);
-    exLenSlider.setBoundsRelative(0.3, 0.2, 0.2, 0.2);
-    exStartSlider.setBoundsRelative(0.55, 0.2, 0.2, 0.2);
-    orderSlider.setBoundsRelative(0.05, 0.45, 0.2, 0.2);
-    inputGainSlider.setBoundsRelative(0.3, 0.45, 0.2, 0.2);
-    matchInLevelButton.setBoundsRelative(0.55, 0.45, 0.2, 0.2);
-    excitationDropdown.setBoundsRelative(0.05, 0.8, 0.25, 0.05);
+    lpcSlider.setBoundsRelative(0.05, 0.1, 0.2, 0.2);
+    exLenSlider.setBoundsRelative(0.3, 0.1, 0.2, 0.2);
+    exStartSlider.setBoundsRelative(0.55, 0.1, 0.2, 0.2);
+    orderSlider.setBoundsRelative(0.05, 0.35, 0.2, 0.2);
+    inputGainSlider.setBoundsRelative(0.3, 0.35, 0.2, 0.2);
+    matchInLevelButton.setBoundsRelative(0.55, 0.35, 0.2, 0.2);
+    frameDurSlider.setBoundsRelative(0.05, 0.6, 0.2, 0.2);
+    excitationDropdown.setBoundsRelative(0.05, 0.85, 0.25, 0.05);
 }
 
 void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)

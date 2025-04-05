@@ -21,8 +21,8 @@ LPC::LPC(int numChannels) {
     phi.resize(ORDER+1);
     alphas.resize(ORDER+1);
     reflections.resize(ORDER);
-    orderedInBuf.resize(FRAMELEN);
-    window.resize(FRAMELEN);
+    orderedInBuf.resize(SAMPLERATE*0.01);
+    window.resize(SAMPLERATE*0.01);
     inBuf.resize(numChannels);
     outBuf.resize(numChannels);
     out_hist.resize(numChannels);
@@ -41,7 +41,7 @@ LPC::LPC(int numChannels) {
     for (int i = 0; i < FRAMELEN; i++) {
         window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(FRAMELEN-1)));
     }
-    for (int i = 0; i < FRAMELEN; i++) {
+    for (int i = 0; i < orderedInBuf.size(); i++) {
         orderedInBuf[i] = 0.0;
     }
     for (int i = 0; i < ORDER; i++) {
@@ -72,9 +72,9 @@ void LPC::levinson_durbin() {
     }
 }
 
-double LPC::autocorrelate(const vector<double>& x, int lag) {
+double LPC::autocorrelate(const vector<double>& x, int frameSize, int lag) {
     double res = 0.0;
-    for (int n = 0; n < x.size()-lag; n++) {
+    for (int n = 0; n < frameSize-lag; n++) {
         res += x[n]*x[n+lag];
     }
     return res;
@@ -131,7 +131,7 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
                 rms_in = sqrt(rms_in/FRAMELEN);
             }
             for (int lag = 0; lag < ORDER+1; lag++) {
-                phi[lag] = autocorrelate(orderedInBuf, lag);
+                phi[lag] = autocorrelate(orderedInBuf, FRAMELEN, lag);
             }
             if (phi[0] != 0) {
                 levinson_durbin();
@@ -170,6 +170,9 @@ void LPC::applyLPC(float *inout, int numSamples, float lpcMix, float exPercentag
                     out_hist[ch][histPtr] = out_n;
                     unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
                     outBuf[ch][wtIdx] += out_n;
+//                    if (isnan(out_n)) {
+//                        DBG("out_n is nan");
+//                    }
                 }
                 if (matchInLevel) {
                     for (int n = 0; n < FRAMELEN; n++) {

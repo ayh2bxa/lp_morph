@@ -29,6 +29,7 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     lpcOrderParameter = apvts.getRawParameterValue ("lpc order");
     lpcExTypeParameter = apvts.getRawParameterValue ("ex type");
     matchInLevelParameter = apvts.getRawParameterValue ("match in rms");
+    frameDurParameter = apvts.getRawParameterValue ("frame dur");
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
@@ -198,6 +199,14 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     lpc.exTypeChanged = prevExType != lpc.exType;
     lpc.exStartChanged = lpc.exStart != exStartPos;
     lpc.matchInLevel = static_cast<bool>((*matchInLevelParameter).load());
+    int oldFrameLen = lpc.FRAMELEN;
+    lpc.FRAMELEN = static_cast<int>((*frameDurParameter).load()*lpc.SAMPLERATE/1000.0);
+    if (oldFrameLen != lpc.FRAMELEN) {
+        for (int i = 0; i < lpc.FRAMELEN; i++) {
+            lpc.window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(lpc.FRAMELEN-1)));
+        }
+        lpc.HOPSIZE = lpc.FRAMELEN/2;
+    }
     currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
     for (int ch = 0; ch < totalNumOutputChannels; ch++) {
