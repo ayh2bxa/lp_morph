@@ -1,0 +1,5 @@
+Builds/
+*.wav
+*.bin
+resources
+*.icns
