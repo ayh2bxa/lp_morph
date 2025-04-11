@@ -82,7 +82,11 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     int exType = vts.getParameterAsValue("ex type").getValue();
     excitationDropdown.setSelectedId(1+exType, juce::dontSendNotification);
     
-    setSize (600, 600);
+    contactButton.setButtonText("Contact Author :-)))");
+    contactButton.addListener(this);
+    addAndMakeVisible(contactButton);
+    
+    setSize (500, 500);
 }
 
 VoicemorphAudioProcessorEditor::~VoicemorphAudioProcessorEditor()
@@ -103,22 +107,30 @@ void VoicemorphAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
-    lpcSlider.setBoundsRelative(0.04, 0.1, 0.28, 0.2);
-    exLenSlider.setBoundsRelative(0.36, 0.1, 0.28, 0.2);
-    exStartSlider.setBoundsRelative(0.68, 0.1, 0.28, 0.2);
-    orderSlider.setBoundsRelative(0.04, 0.35, 0.28, 0.2);
-    wetGainSlider.setBoundsRelative(0.36, 0.35, 0.28, 0.2);
-//    matchInLevelButton.setBoundsRelative(0.55, 0.35, 0.2, 0.2);
-    frameDurSlider.setBoundsRelative(0.68, 0.35, 0.28, 0.2);
-    excitationDropdown.setBoundsRelative(0.05, 0.85, 0.25, 0.05);
-    sidechainButton.setBoundsRelative(0.35, 0.85, 0.25, 0.05);
+    lpcSlider.setBoundsRelative(0.04, 0.1, 0.28, 0.3);
+    exLenSlider.setBoundsRelative(0.36, 0.1, 0.28, 0.3);
+    exStartSlider.setBoundsRelative(0.68, 0.1, 0.28, 0.3);
+    orderSlider.setBoundsRelative(0.04, 0.5, 0.28, 0.3);
+    wetGainSlider.setBoundsRelative(0.36, 0.5, 0.28, 0.3);
+    frameDurSlider.setBoundsRelative(0.68, 0.5, 0.28, 0.3);
+    excitationDropdown.setBoundsRelative(0.04, 0.9, 0.28, 0.05);
+    sidechainButton.setBoundsRelative(0.36, 0.9, 0.28, 0.05);
+    contactButton.setBoundsRelative(0.68, 0.9, 0.28, 0.05);
 }
 
 void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 {
-    // Handle combo box change events if needed
-    // For now, you can leave it empty
     if (comboBoxThatHasChanged == &excitationDropdown) {
         audioProcessor.apvts.getParameterAsValue("ex type").setValue(excitationDropdown.getSelectedId()-1);
+    }
+}
+
+void VoicemorphAudioProcessorEditor::buttonClicked(juce::Button* b)
+{
+    if (b == &contactButton) {
+        juce::URL url ("https://linktr.ee/projectfmusic");
+        if (url.isWellFormed()) {
+            url.launchInDefaultBrowser();
+        }
     }
 }
