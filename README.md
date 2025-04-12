@@ -1,6 +1,6 @@
 # LP Morph (Work in Progress)
 
-### [Plugin Demo](https://drive.google.com/file/d/1v_1yRhYxDeW2HGc8Xrev9TFbFtctd5HF/view?usp=drive_linkhttps://drive.google.com/file/d/1pSDDkjCGImsYZ_IlyGU_NulDk03rHYPb/view?usp=sharinghttps://drive.google.com/file/d/1PZ8PmsiGHm-4qqMvpU1HNK3sbAYAznpV/view?usp=sharing)
+### [Plugin Demo](https://drive.google.com/file/d/1vFPuKh455JisTIh8pYWHy9DkOq8HJ3YP/viewhttps://drive.google.com/file/d/1v_1yRhYxDeW2HGc8Xrev9TFbFtctd5HF/view?usp=drive_linkhttps://drive.google.com/file/d/1pSDDkjCGImsYZ_IlyGU_NulDk03rHYPb/view?usp=sharinghttps://drive.google.com/file/d/1PZ8PmsiGHm-4qqMvpU1HNK3sbAYAznpV/view?usp=sharing)
 
 ### Background
 
@@ -12,7 +12,9 @@ From the input speech signal, LPC derives a set of coefficients to represent its
 
 But what if the input is not restricted to voice, but can also be drums, or synths, or any other sounds? Although linear prediction cannot accurately model every acoustic system as it does our vocal tracts, the unpredictability of its modelling ability on non-speech audio gives it artistic potential, which is the key motivation behind building this plugin.
 
-LP Morph applies real-time LPC to input audio, and allows control of the following parameters:![1744260593907.png](./1744260593907.png)
+LP Morph applies real-time LPC to input audio, and allows control of the following parameters:
+
+ ![1744420131593.png](./1744420131593.png)
 
 1. Mix: controls the dry/wet percentage of LPC effect.
 2. Order: the number of coefficients used to characterise the input. Higher order means greater resolution.

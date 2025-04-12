@@ -68,6 +68,9 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     sidechainButton.setButtonText ("Sidechain");
     addAndMakeVisible(sidechainButton);
     sidechainButton.setVisible(!JUCEApplication::isStandaloneApp());
+    sidechainButton.addListener(this);
+    exLenSlider.setVisible(!sidechainButton.getToggleState());
+    exStartSlider.setVisible(!sidechainButton.getToggleState());
     useSidechainAttachment.reset (new juce::AudioProcessorValueTreeState::ButtonAttachment (vts, "use sidechain", sidechainButton));
     
     excitationDropdown.addItem("BassyTrainNoise", 1);
@@ -132,5 +135,9 @@ void VoicemorphAudioProcessorEditor::buttonClicked(juce::Button* b)
         if (url.isWellFormed()) {
             url.launchInDefaultBrowser();
         }
+    }
+    else if (b == &sidechainButton) {
+        exLenSlider.setVisible(!b->getToggleState());
+        exStartSlider.setVisible(!b->getToggleState());
     }
 }
