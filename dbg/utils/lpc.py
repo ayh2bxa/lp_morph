@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from typing import List, Optional
+# from alphas_plot import analyse_alphas
 
 class LPC:
     def __init__(self, num_channels: int):
@@ -20,6 +21,7 @@ class LPC:
         self.ex_start = 0.0
         self.start = False
         self.noise = None
+        self.G = 1
         
         # Initialize pointers
         self.in_wt_ptrs = [0] * num_channels
@@ -181,12 +183,12 @@ class LPC:
                 if self.phi[0] != 0:
                     self.levinson_durbin()
                     
-                    G = self.phi[0]
+                    self.G = self.phi[0]
                     for k in range(self.ORDER):
-                        G -= self.alphas[k + 1] * self.phi[k + 1]
+                        self.G -= self.alphas[k + 1] * self.phi[k + 1]
                     
-                    G = math.sqrt(G / self.FRAMELEN / math.sqrt(float(self.ORDER)))
-                    
+                    # self.G = math.sqrt(G / self.FRAMELEN / math.sqrt(float(self.ORDER)))
+                    self.G = math.sqrt(self.G)
                     if sidechain is None:
                         for n in range(self.FRAMELEN):
                             ex = self.noise[ex_ptr]
@@ -225,7 +227,7 @@ class LPC:
                             if ex_ptr >= self.EXLEN:
                                 ex_ptr = 0
                             
-                            out_n = G * ex
+                            out_n = self.G * ex
                             for k in range(self.ORDER):
                                 idx = (hist_ptr + k) % self.ORDER
                                 out_n -= self.alphas[k + 1] * self.out_hist[ch][idx]

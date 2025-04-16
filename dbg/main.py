@@ -1,6 +1,8 @@
 import numpy as np
 import soundfile as sf
-from utils.lpc import LPC  # Assuming the LPC class from previous translation is in lpc.py
+from utils.lpc import LPC
+from utils.alphas_plot import analyse_alphas, plot_pole_zero
+# from scipy.signal import tf2zpk
 
 class AudioProcessor:
     def __init__(self, input_file, excitation_file=None, sample_rate=44100, block_size=512):
@@ -89,6 +91,15 @@ class AudioProcessor:
             
             # Update gain smoothing for next block
             self.previous_gain = self.current_gain
+            
+            if i == 100:
+                # print(self.lpc.G)
+                # analyse_alphas(self.lpc.G, self.lpc.alphas, self.lpc.FRAMELEN, self.sample_rate)
+                plot_pole_zero(self.lpc.G, self.lpc.alphas, self.lpc.FRAMELEN, self.sample_rate)
+                # z, p, k = tf2zpk(self.lpc.G, self.lpc.alphas)
+                # print(z)
+                # print(np.abs(p))
+                # print(k)
         
         return self.output_audio
 
