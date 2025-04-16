@@ -77,7 +77,6 @@ private:
     std::atomic<float>* lpcExStartParameter  = nullptr;
     std::atomic<float>* lpcExTypeParameter  = nullptr;
     std::atomic<float>* frameDurParameter  = nullptr;
-    std::atomic<float>* matchInLevelParameter  = nullptr;
     std::atomic<float>* useSidechainParameter  = nullptr;
     bool isStandalone;
     void updateLpcParams();

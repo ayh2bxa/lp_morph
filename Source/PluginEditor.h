@@ -46,7 +46,6 @@ private:
     Label orderLabel;
     Slider frameDurSlider;
     Label frameDurLabel;
-    juce::ToggleButton matchInLevelButton;
     juce::ToggleButton sidechainButton;
     juce::TextButton contactButton;
     
@@ -56,7 +55,6 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exStartAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> orderAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frameDurAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> matchInLevelAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> useSidechainAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)

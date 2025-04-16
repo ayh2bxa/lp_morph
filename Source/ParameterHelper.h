@@ -21,7 +21,6 @@ namespace Utility
                 std::make_unique<AudioParameterInt>(juce::ParameterID("ex type", 1), "Excitation Type", 0, 6, 6),
                 std::make_unique<AudioParameterInt>(juce::ParameterID("lpc order", 1), "LPC Order", 1, 32, 32),
                 std::make_unique<AudioParameterFloat>(juce::ParameterID("frame dur", 1), "Frame Duration (ms)", NormalisableRange<float>{0.5f, 10.f, 0.1f}, 10.f),
-                std::make_unique<AudioParameterBool>(juce::ParameterID("match in rms", 1), "Match Input RMS Level", false),
                 std::make_unique<AudioParameterBool>(juce::ParameterID("use sidechain", 1), "Use Sidechain as Excitation", false)
             };
         }

@@ -61,10 +61,6 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(frameDurLabel);
     frameDurAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "frame dur", frameDurSlider));
     
-    matchInLevelButton.setButtonText ("Match Input RMS");
-    addAndMakeVisible(matchInLevelButton);
-    matchInLevelAttachment.reset (new juce::AudioProcessorValueTreeState::ButtonAttachment (vts, "match in rms", matchInLevelButton));
-    
     sidechainButton.setButtonText ("Sidechain");
     addAndMakeVisible(sidechainButton);
     sidechainButton.setVisible(!JUCEApplication::isStandaloneApp());

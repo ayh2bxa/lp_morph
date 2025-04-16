@@ -33,7 +33,6 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     lpcExStartParameter = apvts.getRawParameterValue ("ex start pos");
     lpcOrderParameter = apvts.getRawParameterValue ("lpc order");
     lpcExTypeParameter = apvts.getRawParameterValue ("ex type");
-    matchInLevelParameter = apvts.getRawParameterValue ("match in rms");
     frameDurParameter = apvts.getRawParameterValue ("frame dur");
     useSidechainParameter = apvts.getRawParameterValue ("use sidechain");
     isStandalone = wrapperType == wrapperType_Standalone;
@@ -159,7 +158,6 @@ void VoicemorphAudioProcessor::updateLpcParams() {
     lpc.orderChanged = prevOrder != lpc.ORDER;
     lpc.exTypeChanged = prevExType != lpc.exType;
     lpc.exStartChanged = lpc.exStart != exStartPos;
-    lpc.matchInLevel = static_cast<bool>((*matchInLevelParameter).load());
     lpc.prevFrameLen = lpc.FRAMELEN;
     lpc.FRAMELEN = static_cast<int>((*frameDurParameter).load()*lpc.SAMPLERATE/1000.0);
     if (lpc.prevFrameLen != lpc.FRAMELEN) {

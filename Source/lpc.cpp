@@ -20,7 +20,6 @@ LPC::LPC(int numChannels) {
         exCntPtrs[ch] = 0;
         inRdPtrs[ch] = 0;
     }
-    max_amp = 1;
     phi.resize(ORDER+1);
     alphas.resize(ORDER+1);
     reflections.resize(ORDER);
@@ -120,10 +119,6 @@ void LPC::prepareToPlay() {
     }
 }
 
-void LPC::updateParams() {
-    return;
-}
-
 void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain) {
     inWtPtr = inWtPtrs[ch];
     inRdPtr = inRdPtrs[ch];
@@ -154,7 +149,6 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     exPtr = exPtrs[ch];
     exCntPtr = exCntPtrs[ch];
     histPtr = histPtrs[ch];
-    double factor = 1.0;
     float slope = (currentGain-previousGain)/numSamples;
     int validHopSize = min(HOPSIZE, prevFrameLen/2);
     for (int s = 0; s < numSamples; s++) {
@@ -182,7 +176,6 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
         smpCnt++;
         if (smpCnt >= validHopSize) {
             smpCnt = 0;
-            double rms_in = 0.0;
             if (sidechain != nullptr) {
                 for (int i = 0; i < FRAMELEN; i++) {
                     int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
@@ -196,30 +189,16 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                     orderedInBuf[i] = window[i]*inBuf[ch][inBufIdx];
                 }
             }
-            if (matchInLevel) {
-                for (int i = 0; i < FRAMELEN; i++) {
-                    double smp = orderedInBuf[i];
-                    rms_in += smp*smp;
-                }
-                rms_in = sqrt(rms_in/FRAMELEN);
-            }
             for (int lag = 0; lag < ORDER+1; lag++) {
                 phi[lag] = autocorrelate(orderedInBuf, FRAMELEN, lag);
             }
             if (phi[0] != 0) {
                 levinson_durbin();
-                double G;
-                if (!matchInLevel) {
-                    G = phi[0];
-                    for (int k = 0; k < ORDER; k++) {
-                        G -= alphas[k+1]*phi[k+1];
-                    }
-                    G = sqrt(G);
+                double G = phi[0];
+                for (int k = 0; k < ORDER; k++) {
+                    G -= alphas[k+1]*phi[k+1];
                 }
-                else {
-                    G = 1.0;
-                }
-                double rms_out = 0.0;
+                G = sqrt(G/(double)FRAMELEN/sqrt(double(ORDER)));
                 if (sidechain == nullptr) {
                     for (int n = 0; n < FRAMELEN; n++) {
                         double ex = (*noise)[exPtr];
@@ -271,22 +250,6 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                         unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
                         outBuf[ch][wtIdx] += out_n;
                     }
-                }
-                if (matchInLevel) {
-                    for (int n = 0; n < FRAMELEN; n++) {
-                        unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
-                        rms_out += outBuf[ch][wtIdx]*outBuf[ch][wtIdx];
-                    }
-                    rms_out = sqrt(rms_out/FRAMELEN);
-                    if (rms_in == 0) {
-                        factor = 1.0;
-                    }
-                    else {
-                        factor = rms_in/rms_out;
-                    }
-                }
-                else {
-                    factor = 1.0;
                 }
                 for (int i = 0; i < out_hist[ch].size(); i++) {
                     out_hist[ch][i] = 0;

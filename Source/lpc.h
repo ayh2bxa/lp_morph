@@ -19,7 +19,6 @@ private:
     int histPtr;
     int exCntPtr;
     size_t inRdPtr;
-    float max_amp;
     vector<vector<double>> inBuf;
     vector<vector<double>> scBuf;
     vector<double> orderedInBuf;
@@ -47,7 +46,6 @@ public:
     void set_exlen(int val) {EXLEN = val;};
     int get_exlen() {return EXLEN;};
     int get_max_exlen() {return MAX_EXLEN;};
-    void updateParams();
     const std::vector<double>* noise = nullptr;
     int FRAMELEN = 441;
     int prevFrameLen = FRAMELEN;
@@ -60,7 +58,6 @@ public:
     int exType = 0;
     bool orderChanged = false;
     bool exTypeChanged = false;
-    bool matchInLevel = false;
     bool exStartChanged = false;
     float exStart = 0.f;
     vector<double> window;
