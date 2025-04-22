@@ -198,7 +198,7 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                 for (int k = 0; k < ORDER; k++) {
                     G -= alphas[k+1]*phi[k+1];
                 }
-                G = sqrt(G/(double)FRAMELEN/sqrt(double(ORDER)));
+                G = sqrt(G);//sqrt((double)(ORDER*FRAMELEN)));
                 if (sidechain == nullptr) {
                     for (int n = 0; n < FRAMELEN; n++) {
                         double ex = (*noise)[exPtr];

@@ -4,21 +4,21 @@ from typing import List, Optional
 # from alphas_plot import analyse_alphas
 
 class LPC:
-    def __init__(self, num_channels: int):
+    def __init__(self, num_channels: int, sample_rate, order, ex_start = 0.0):
         self.total_num_channels = num_channels
-        self.FRAMELEN = 441
-        self.prev_frame_len = self.FRAMELEN
-        self.HOPSIZE = self.FRAMELEN // 2
         self.BUFLEN = 16384
-        self.SAMPLERATE = 44100
+        self.SAMPLERATE = sample_rate
+        self.FRAMELEN = int(self.SAMPLERATE*0.01)
+        self.HOPSIZE = self.FRAMELEN // 2
+        self.prev_frame_len = self.FRAMELEN
         self.MAX_EXLEN = self.SAMPLERATE // 6
         self.EXLEN = self.MAX_EXLEN
-        self.ORDER = 32
+        self.ORDER = order
         self.ex_type = 0
         self.order_changed = False
         self.ex_type_changed = False
         self.ex_start_changed = False
-        self.ex_start = 0.0
+        self.ex_start = ex_start
         self.start = False
         self.noise = None
         self.G = 1
@@ -176,7 +176,7 @@ class LPC:
                     for i in range(self.FRAMELEN):
                         in_buf_idx = (in_wt_ptr + i - self.FRAMELEN + self.BUFLEN) % self.BUFLEN
                         self.ordered_in_buf[i] = self.window[i] * self.in_buf[ch][in_buf_idx]
-                
+
                 for lag in range(self.ORDER + 1):
                     self.phi[lag] = self.autocorrelate(self.ordered_in_buf, self.FRAMELEN, lag)
                 

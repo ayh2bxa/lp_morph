@@ -246,6 +246,13 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             auto *channelDataR = buffer.getReadPointer(ch);
             auto *channelDataW = buffer.getWritePointer(ch);
             lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+            float rms = buffer.getRMSLevel(ch, 0, buffer.getNumSamples());
+            if (rms > 1) {
+                buffer.applyGain(ch, 0, buffer.getNumSamples(), 1.f/rms);
+            }
+            else if (isnan(rms)) {
+                buffer.applyGain(ch, 0, buffer.getNumSamples(), 0.f);
+            }
         }
     }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {

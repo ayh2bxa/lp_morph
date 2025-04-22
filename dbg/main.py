@@ -5,10 +5,10 @@ from utils.alphas_plot import analyse_alphas, plot_pole_zero
 # from scipy.signal import tf2zpk
 
 class AudioProcessor:
-    def __init__(self, input_file, excitation_file=None, sample_rate=44100, block_size=512):
+    def __init__(self, input_file, excitation_file=None, sample_rate=44100, block_size=512, order=32, wet_gain = 1.0, lpc_mix = 1.0, ex_len = 1.0, ex_start = 0.0):
         self.sample_rate = sample_rate
         self.block_size = block_size
-        self.lpc = LPC(num_channels=2)  # Stereo by default
+        self.lpc = LPC(2, sample_rate, order, ex_start)  # Stereo by default
         
         # Load audio files
         self.input_audio, self.input_sr = sf.read(input_file)
@@ -24,11 +24,11 @@ class AudioProcessor:
         
         # Set default parameters
         self.lpc.FRAMELEN = int(sample_rate * 0.01)
-        self.lpc.ORDER = 32
-        self.wet_gain = 1.0  # 0dB
-        self.lpc_mix = 1.0
-        self.ex_len = 1.0
-        self.ex_start = 0.0
+        self.lpc.ORDER = order
+        self.wet_gain = wet_gain
+        self.lpc_mix = lpc_mix
+        self.ex_len = ex_len
+        self.ex_start = ex_start
         
         # Initialize processing state
         self.previous_gain = self.wet_gain
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     parser.add_argument("--excitation", help="Excitation audio file (optional)")
     parser.add_argument("--sample_rate", type=int, default=44100, help="Sample rate")
     parser.add_argument("--block_size", type=int, default=512, help="Processing block size")
-    parser.add_argument("--order", type=int, default=32, help="LPC order")
+    parser.add_argument("--order", type=int, default=8, help="LPC order")
     parser.add_argument("--wet_gain", type=float, default=0.0, help="Wet gain in dB")
     parser.add_argument("--lpc_mix", type=float, default=1.0, help="LPC mix (0.0 to 1.0)")
     parser.add_argument("--ex_len", type=float, default=1.0, help="Excitation length (0.0 to 1.0)")
