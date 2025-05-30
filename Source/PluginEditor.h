@@ -18,7 +18,7 @@
 using namespace juce;
 using namespace std;
 
-class VoicemorphAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::ComboBox::Listener, public juce::Button::Listener
+class VoicemorphAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::ComboBox::Listener, public juce::Button::Listener, public juce::Timer
 {
 public:
     VoicemorphAudioProcessorEditor (VoicemorphAudioProcessor&, juce::AudioProcessorValueTreeState&);
@@ -29,6 +29,7 @@ public:
     void resized() override;
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
     void buttonClicked(juce::Button *b) override;
+    void timerCallback() override;
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -56,6 +57,8 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> orderAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frameDurAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> useSidechainAttachment;
+    
+    juce::Image spectrumImage;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };

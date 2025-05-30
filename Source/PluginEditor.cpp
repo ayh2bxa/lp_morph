@@ -11,8 +11,11 @@
 
 //==============================================================================
 VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    : AudioProcessorEditor (&p), audioProcessor (p), spectrumImage (juce::Image::RGB, 512, 512, true)
 {
+    setOpaque (true);
+    startTimerHz(30);
+    
     lpcSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     lpcSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
     addAndMakeVisible(lpcSlider);
@@ -85,7 +88,8 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     contactButton.addListener(this);
     addAndMakeVisible(contactButton);
     
-    setSize (500, 500);
+    setSize (600, 600);
+    setResizable(true, true);
 }
 
 VoicemorphAudioProcessorEditor::~VoicemorphAudioProcessorEditor()
@@ -100,21 +104,24 @@ void VoicemorphAudioProcessorEditor::paint (juce::Graphics& g)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
 
     g.setColour (juce::Colours::white);
+    auto inputLineColour = juce::Colours::white;
+    auto estimatedFilterLineColour = juce::Colours::red;
+    
 }
 
 void VoicemorphAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
-    lpcSlider.setBoundsRelative(0.04, 0.1, 0.28, 0.3);
-    exLenSlider.setBoundsRelative(0.36, 0.1, 0.28, 0.3);
-    exStartSlider.setBoundsRelative(0.68, 0.1, 0.28, 0.3);
-    orderSlider.setBoundsRelative(0.04, 0.5, 0.28, 0.3);
-    wetGainSlider.setBoundsRelative(0.36, 0.5, 0.28, 0.3);
-    frameDurSlider.setBoundsRelative(0.68, 0.5, 0.28, 0.3);
-    excitationDropdown.setBoundsRelative(0.04, 0.9, 0.28, 0.05);
-    sidechainButton.setBoundsRelative(0.36, 0.9, 0.28, 0.05);
-    contactButton.setBoundsRelative(0.68, 0.9, 0.28, 0.05);
+    lpcSlider.setBoundsRelative(0.04, 0.05, 0.28, 0.15);
+    exLenSlider.setBoundsRelative(0.36, 0.05, 0.28, 0.15);
+    exStartSlider.setBoundsRelative(0.68, 0.05, 0.28, 0.15);
+    orderSlider.setBoundsRelative(0.04, 0.3, 0.28, 0.15);
+    wetGainSlider.setBoundsRelative(0.36, 0.3, 0.28, 0.15);
+    frameDurSlider.setBoundsRelative(0.68, 0.3, 0.28, 0.15);
+    excitationDropdown.setBoundsRelative(0.04, 0.95, 0.28, 0.04);
+    sidechainButton.setBoundsRelative(0.36, 0.95, 0.28, 0.04);
+    contactButton.setBoundsRelative(0.68, 0.95, 0.28, 0.04);
 }
 
 void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
@@ -136,4 +143,8 @@ void VoicemorphAudioProcessorEditor::buttonClicked(juce::Button* b)
         exLenSlider.setVisible(!b->getToggleState());
         exStartSlider.setVisible(!b->getToggleState());
     }
+}
+
+void VoicemorphAudioProcessorEditor::timerCallback() {
+    
 }
