@@ -6,6 +6,8 @@ juce_add_plugin(LPMorph
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD TRUE
+    VST3_COPY_DIR "/Users/anthony/Library/Audio/Plug-Ins/VST3"
+    AU_COPY_DIR "/Users/anthony/Library/Audio/Plug-Ins/Components"
     PLUGIN_MANUFACTURER_CODE Manu
     PLUGIN_CODE Temp
     FORMATS AU VST3 Standalone
@@ -14,7 +16,7 @@ juce_add_plugin(LPMorph
 juce_generate_juce_header(LPMorph)
 
 file(GLOB SRC_FILES "src/*.cpp")
-file(GLOB LIBS_FILES "libs/*.cpp")
+file(GLOB LIBS_FILES "libs/*")
 file(GLOB HEADER_FILES "src/*.h")
 target_sources(LPMorph PRIVATE ${SRC_FILES} ${LIBS_FILES} ${HEADER_FILES})
 source_group("Source Files" FILES ${SRC_FILES})
@@ -40,3 +42,4 @@ target_link_libraries(LPMorph
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+

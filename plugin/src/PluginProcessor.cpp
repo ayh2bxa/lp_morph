@@ -16,9 +16,6 @@ VoicemorphAudioProcessor::VoicemorphAudioProcessor()
                     #if ! JucePlugin_IsMidiEffect
                      #if ! JucePlugin_IsSynth
                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #if ! JucePlugin_IsStandalone
-                       .withInput ("Sidechain", juce::AudioChannelSet::stereo(), true)
-                      #endif
                      #endif
                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                     #endif
@@ -34,7 +31,6 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     lpcOrderParameter = apvts.getRawParameterValue ("lpc order");
     lpcExTypeParameter = apvts.getRawParameterValue ("ex type");
     frameDurParameter = apvts.getRawParameterValue ("frame dur");
-    useSidechainParameter = apvts.getRawParameterValue ("use sidechain");
     isStandalone = wrapperType == wrapperType_Standalone;
 }
 
@@ -151,8 +147,21 @@ void VoicemorphAudioProcessor::updateLpcParams() {
     float exStartPos = (*lpcExStartParameter).load();
     int prevExType = lpc.exType;
     lpc.exType = static_cast<int>((*lpcExTypeParameter).load());
-    lpc.noise = &factoryExcitations[lpc.exType];
-    lpc.EXLEN = (*lpc.noise).size();
+    
+    if (usingCustomExcitation && currentCustomExcitationIndex >= 0 && currentCustomExcitationIndex < customExcitations.size()) {
+        lpc.noise = &customExcitations[currentCustomExcitationIndex];
+        lpc.EXLEN = (*lpc.noise).size();
+    } else if (lpc.exType == 7) {
+        lpc.noise = nullptr;
+        lpc.EXLEN = 0;
+    } else if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
+        lpc.noise = &factoryExcitations[lpc.exType];
+        lpc.EXLEN = (*lpc.noise).size();
+    } else {
+        lpc.noise = nullptr;
+        lpc.EXLEN = 0;
+    }
+    
     int prevOrder = lpc.ORDER;
     lpc.ORDER = static_cast<int>((*lpcOrderParameter).load());
     lpc.orderChanged = prevOrder != lpc.ORDER;
@@ -223,36 +232,16 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     updateLpcParams();
     currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
-    bool useSidechain = (!JUCEApplication::isStandaloneApp()) && static_cast<bool>((*useSidechainParameter).load());
-    if (useSidechain) {
-        const float *sidechainData = nullptr;
-        auto* scBus = getBus(true, 1);
-        AudioBuffer<float> sidechainBuffer;
-        AudioBuffer<float> inputBuffer = getBusBuffer(buffer, true, 0);;
-        if (scBus != nullptr && scBus->isEnabled()) {
-            sidechainBuffer = getBusBuffer (buffer, true, 1);
-            auto outputBuffer = getBusBuffer (buffer, false, 0);
-            numChannels = juce::jmin (sidechainBuffer.getNumChannels(), outputBuffer.getNumChannels());
+    for (int ch = 0; ch < numChannels; ch++) {
+        auto *channelDataR = buffer.getReadPointer(ch);
+        auto *channelDataW = buffer.getWritePointer(ch);
+        lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+        float rms = buffer.getRMSLevel(ch, 0, buffer.getNumSamples());
+        if (rms > 1) {
+            buffer.applyGain(ch, 0, buffer.getNumSamples(), 1.f/rms);
         }
-        for (int ch = 0; ch < numChannels; ch++) {
-            auto *channelDataR = inputBuffer.getReadPointer(ch);
-            auto *channelDataW = inputBuffer.getWritePointer(ch);
-            sidechainData = sidechainBuffer.getReadPointer(ch);
-            lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
-        }
-    }
-    else {
-        for (int ch = 0; ch < numChannels; ch++) {
-            auto *channelDataR = buffer.getReadPointer(ch);
-            auto *channelDataW = buffer.getWritePointer(ch);
-            lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
-            float rms = buffer.getRMSLevel(ch, 0, buffer.getNumSamples());
-            if (rms > 1) {
-                buffer.applyGain(ch, 0, buffer.getNumSamples(), 1.f/rms);
-            }
-            else if (isnan(rms)) {
-                buffer.applyGain(ch, 0, buffer.getNumSamples(), 0.f);
-            }
+        else if (isnan(rms)) {
+            buffer.applyGain(ch, 0, buffer.getNumSamples(), 0.f);
         }
     }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {
@@ -287,6 +276,73 @@ void VoicemorphAudioProcessor::setStateInformation (const void* data, int sizeIn
 
 //==============================================================================
 // This creates new instances of the plugin..
+std::vector<double> loadWavFile(const juce::File& file)
+{
+    juce::AudioFormatManager formatManager;
+    formatManager.registerBasicFormats();
+    
+    std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
+    if (reader != nullptr)
+    {
+        const int numSamples = static_cast<int>(reader->lengthInSamples);
+        juce::AudioBuffer<float> buffer(1, numSamples);
+        reader->read(&buffer, 0, numSamples, 0, true, false);
+        
+        std::vector<double> samples;
+        samples.reserve(numSamples);
+        const float* channelData = buffer.getReadPointer(0);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            samples.push_back(static_cast<double>(channelData[i]));
+        }
+        return samples;
+    }
+    return {};
+}
+
+void VoicemorphAudioProcessor::loadCustomExcitations(const juce::File& selectedFile)
+{
+    customExcitations.clear();
+    customExcitationFiles.clear();
+    
+    juce::File parentDir = selectedFile.getParentDirectory();
+    juce::Array<juce::File> wavFiles;
+    parentDir.findChildFiles(wavFiles, juce::File::findFiles, false, "*.wav");
+    
+    for (const auto& file : wavFiles)
+    {
+        auto samples = loadWavFile(file);
+        if (!samples.empty())
+        {
+            customExcitations.push_back(samples);
+            customExcitationFiles.push_back(file);
+        }
+    }
+}
+
+void VoicemorphAudioProcessor::setCustomExcitation(int index)
+{
+    if (index >= 0 && index < customExcitations.size())
+    {
+        currentCustomExcitationIndex = index;
+    }
+}
+
+std::vector<juce::File> VoicemorphAudioProcessor::getCustomExcitationFiles() const
+{
+    return customExcitationFiles;
+}
+
+void VoicemorphAudioProcessor::setUsingCustomExcitation(bool useCustom)
+{
+    usingCustomExcitation = useCustom;
+}
+
+bool VoicemorphAudioProcessor::isUsingCustomExcitation() const
+{
+    return usingCustomExcitation;
+}
+
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new VoicemorphAudioProcessor();

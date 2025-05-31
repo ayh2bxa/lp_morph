@@ -63,12 +63,19 @@ public:
     LPC lpc;
     
     AudioProcessorValueTreeState apvts;
+    void setUsingCustomExcitation(bool useCustom);
+    vector<juce::File> getCustomExcitationFiles() const;
+    void setCustomExcitation(int index);
+    void loadCustomExcitations(const juce::File& selectedFile);
 private:
     float previousGain = 0;
     float currentGain = 0;
     void loadFactoryExcitations();
     juce::File writeBinaryDataToTempFile(const void* data, int size, const juce::String& fileName);
     vector<vector<double>> factoryExcitations;
+    vector<vector<double>> customExcitations;
+    vector<juce::File> customExcitationFiles;
+    bool isUsingCustomExcitation() const;
     std::atomic<float>* exLenParameter  = nullptr;
     std::atomic<float>* gainParameter  = nullptr;
     std::atomic<float>* lpcMixParameter  = nullptr;
@@ -76,8 +83,9 @@ private:
     std::atomic<float>* lpcExStartParameter  = nullptr;
     std::atomic<float>* lpcExTypeParameter  = nullptr;
     std::atomic<float>* frameDurParameter  = nullptr;
-    std::atomic<float>* useSidechainParameter  = nullptr;
     bool isStandalone;
+    bool usingCustomExcitation = false;
+    int currentCustomExcitationIndex = -1;
     void updateLpcParams();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessor)

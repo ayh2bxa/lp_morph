@@ -30,11 +30,14 @@ public:
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
     void buttonClicked(juce::Button *b) override;
     void timerCallback() override;
+    void updateCustomExcitationDropdown();
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     VoicemorphAudioProcessor& audioProcessor;
     ComboBox excitationDropdown;
+    ComboBox customExcitationDropdown;
+    juce::TextButton customButton;
     juce::Slider lpcSlider;
     juce::Label lpcLabel;
     juce::Slider exLenSlider;
@@ -47,7 +50,6 @@ private:
     Label orderLabel;
     Slider frameDurSlider;
     Label frameDurLabel;
-    juce::ToggleButton sidechainButton;
     juce::TextButton contactButton;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> wetGainAttachment;
@@ -56,9 +58,10 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exStartAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> orderAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frameDurAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> useSidechainAttachment;
     
     juce::Image spectrumImage;
+    
+    std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };

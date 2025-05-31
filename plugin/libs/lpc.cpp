@@ -120,6 +120,9 @@ void LPC::prepareToPlay() {
 }
 
 void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain) {
+    if (noise == nullptr) {
+        return;
+    }
     inWtPtr = inWtPtrs[ch];
     inRdPtr = inRdPtrs[ch];
     smpCnt = smpCnts[ch];
