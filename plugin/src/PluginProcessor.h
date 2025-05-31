@@ -9,7 +9,6 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "pitchshift.h"
 #include "lpc.h"
 #include "ParameterHelper.h"
 #include <cmath>
