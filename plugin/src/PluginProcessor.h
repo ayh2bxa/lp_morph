@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "lpc.h"
+#include "agc.h"
 #include "ParameterHelper.h"
 #include <cmath>
 

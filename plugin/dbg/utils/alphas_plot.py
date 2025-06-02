@@ -28,7 +28,7 @@ def plot_pole_zero(G, alphas, nfft, sr):
     plt.legend()
     plt.show()
 
-def analyse_alphas(G, alphas, nfft, sr):
+def analyse_alphas(G, alphas, input, nfft, sr):
     # Get the frequency response
     w, h = signal.freqz(G, alphas, worN=nfft, fs=sr)
     
@@ -39,6 +39,6 @@ def analyse_alphas(G, alphas, nfft, sr):
     plt.title(f'Frequency Response')
     plt.ylabel('Magnitude (dB)')
     plt.grid(True)
-    
+    plt.semilogx(w, 20 * np.log10(np.abs(np.fft.fft(input, nfft))))
     plt.tight_layout()
     plt.show()

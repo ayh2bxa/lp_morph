@@ -163,8 +163,12 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
         if (inWtPtr >= BUFLEN) {
             inWtPtr = 0;
         }
-        float out = outBuf[ch][outRdPtr];
-        float in = inBuf[ch][(inRdPtr+BUFLEN-FRAMELEN)%BUFLEN];
+        double out = outBuf[ch][outRdPtr];
+//        double outDb = 10*log10(out*out);
+//        double newGainDb = -40.f-outDb;
+//        gainDb = smoothFactor*newGainDb+(1.0-smoothFactor)*gainDb;
+//        out *= pow(10, gainDb/10.0);
+        double in = inBuf[ch][(inRdPtr+BUFLEN-FRAMELEN)%BUFLEN];
         inRdPtr++;
         if (inRdPtr >= BUFLEN) {
             inRdPtr = 0;
@@ -202,57 +206,30 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                     G -= alphas[k+1]*phi[k+1];
                 }
                 G = sqrt(G);//sqrt((double)(ORDER*FRAMELEN)));
-                if (sidechain == nullptr) {
-                    for (int n = 0; n < FRAMELEN; n++) {
-                        double ex = (*noise)[exPtr];
-                        exCntPtr++;
-                        exPtr++;
-                        if (exCntPtr >= static_cast<int>(exPercentage*EXLEN)) {
-                            exCntPtr = 0;
-                            exPtr = exStart;
-                        }
-                        if (exPtr >= EXLEN) {
-                            exPtr = 0;
-                        }
-                        double out_n = G*ex;
-                        for (int k = 0; k < ORDER; k++) {
-                            int idx = (histPtr+k)%ORDER;
-                            out_n -= alphas[k+1]*out_hist[ch][idx];
-                        }
-                        histPtr--;
-                        if (histPtr < 0) {
-                            histPtr += ORDER;
-                        }
-                        out_hist[ch][histPtr] = out_n;
-                        unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
-                        outBuf[ch][wtIdx] += out_n;
+//                double G = 1.0;
+                for (int n = 0; n < FRAMELEN; n++) {
+                    double ex = (*noise)[exPtr];
+                    exCntPtr++;
+                    exPtr++;
+                    if (exCntPtr >= static_cast<int>(exPercentage*EXLEN)) {
+                        exCntPtr = 0;
+                        exPtr = exStart;
                     }
-                }
-                else {
-                    for (int n = 0; n < FRAMELEN; n++) {
-                        double ex = orderedScBuf[n];
-                        exCntPtr++;
-                        exPtr++;
-                        if (exCntPtr >= static_cast<int>(exPercentage*EXLEN)) {
-                            exCntPtr = 0;
-                            exPtr = exStart;
-                        }
-                        if (exPtr >= EXLEN) {
-                            exPtr = 0;
-                        }
-                        double out_n = G*ex;
-                        for (int k = 0; k < ORDER; k++) {
-                            int idx = (histPtr+k)%ORDER;
-                            out_n -= alphas[k+1]*out_hist[ch][idx];
-                        }
-                        histPtr--;
-                        if (histPtr < 0) {
-                            histPtr += ORDER;
-                        }
-                        out_hist[ch][histPtr] = out_n;
-                        unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
-                        outBuf[ch][wtIdx] += out_n;
+                    if (exPtr >= EXLEN) {
+                        exPtr = 0;
                     }
+                    double out_n = G*ex;
+                    for (int k = 0; k < ORDER; k++) {
+                        int idx = (histPtr+k)%ORDER;
+                        out_n -= alphas[k+1]*out_hist[ch][idx];
+                    }
+                    histPtr--;
+                    if (histPtr < 0) {
+                        histPtr += ORDER;
+                    }
+                    out_hist[ch][histPtr] = out_n;
+                    unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
+                    outBuf[ch][wtIdx] += out_n;
                 }
                 for (int i = 0; i < out_hist[ch].size(); i++) {
                     out_hist[ch][i] = 0;

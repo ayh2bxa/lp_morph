@@ -3,6 +3,7 @@
 #include <random>
 #include <cmath>
 #include <JuceHeader.h>
+#include "agc.h"
 
 using namespace std;
 
@@ -39,7 +40,9 @@ private:
     vector<int> exCntPtrs;
     vector<int> histPtrs;
     int totalNumChannels;
+    double smoothFactor = 1.0-pow(2.71828182845904523536, -1.0/44100.0);
 public:
+    double gainDb = 0.0;
     LPC(int numChannels);
     bool start = false;
     void applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain);
