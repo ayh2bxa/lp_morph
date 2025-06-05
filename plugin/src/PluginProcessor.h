@@ -62,6 +62,7 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     
     LPC lpc;
+    vector<unique_ptr<AGC>> AGCs;
     
     AudioProcessorValueTreeState apvts;
     void setUsingCustomExcitation(bool useCustom);

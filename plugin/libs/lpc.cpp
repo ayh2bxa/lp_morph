@@ -1,6 +1,9 @@
 #include "lpc.h"
 
 LPC::LPC(int numChannels) {
+    double maxFrameDurS = MAX_FRAME_DUR/1000.0;
+    ORDER = MAX_ORDER;
+    FRAMELEN = (int)(SAMPLERATE*maxFrameDurS);
     totalNumChannels = numChannels;
     inWtPtrs.resize(numChannels);
     inRdPtrs.resize(numChannels);
@@ -22,10 +25,8 @@ LPC::LPC(int numChannels) {
     }
     phi.resize(ORDER+1);
     alphas.resize(ORDER+1);
-    reflections.resize(ORDER);
-    orderedInBuf.resize(SAMPLERATE*0.01);
-    orderedScBuf.resize(SAMPLERATE*0.01);
-    window.resize(SAMPLERATE*0.01);
+    orderedInBuf.resize(SAMPLERATE*maxFrameDurS);
+    window.resize(SAMPLERATE*maxFrameDurS);
     inBuf.resize(numChannels);
     outBuf.resize(numChannels);
     out_hist.resize(numChannels);
@@ -48,7 +49,6 @@ LPC::LPC(int numChannels) {
     }
     for (int i = 0; i < orderedInBuf.size(); i++) {
         orderedInBuf[i] = 0.0;
-        orderedScBuf[i] = 0.0;
     }
     for (int i = 0; i < ORDER; i++) {
         phi[i] = 0.0;
@@ -58,7 +58,7 @@ LPC::LPC(int numChannels) {
 }
 
 //http://www.emptyloop.com/technotes/A%20tutorial%20on%20linear%20prediction%20and%20Levinson-Durbin.pdf
-void LPC::levinson_durbin() {
+double LPC::levinson_durbin() {
     reset_a();
     double E = phi[0];
     for (int k = 0; k < ORDER; k++) {
@@ -67,7 +67,6 @@ void LPC::levinson_durbin() {
             lbda += alphas[j] * phi[k + 1 - j];
         }
         lbda = -lbda / E;
-        reflections[k] = lbda;
         int half = (k + 1) / 2;
         for (int n = 0; n <= half; n++) {
             double tmp = alphas[k + 1 - n] + lbda * alphas[n];
@@ -76,6 +75,7 @@ void LPC::levinson_durbin() {
         }
         E *= (1.0 - lbda * lbda);
     }
+    return E;
 }
 
 double LPC::autocorrelate(const vector<double>& x, int frameSize, int lag) {
@@ -108,18 +108,14 @@ void LPC::prepareToPlay() {
     inBuf.resize(totalNumChannels);
     outBuf.resize(totalNumChannels);
     out_hist.resize(totalNumChannels);
-    scBuf.resize(totalNumChannels);
     for (int ch = 0; ch < totalNumChannels; ch++) {
         inBuf[ch].resize(BUFLEN);
-        scBuf[ch].resize(BUFLEN);
         outBuf[ch].resize(BUFLEN);
-        for (int i = 0; i < ORDER; i++) {
-            out_hist[ch][i] = 0.0;
-        }
+        out_hist[ch].resize(MAX_ORDER);
     }
 }
 
-void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain) {
+void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, double previousGain, double currentGain) {
     if (noise == nullptr) {
         return;
     }
@@ -152,28 +148,21 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     exPtr = exPtrs[ch];
     exCntPtr = exCntPtrs[ch];
     histPtr = histPtrs[ch];
-    float slope = (currentGain-previousGain)/numSamples;
+    double slope = (currentGain-previousGain)/numSamples;
     int validHopSize = min(HOPSIZE, prevFrameLen/2);
     for (int s = 0; s < numSamples; s++) {
         inBuf[ch][inWtPtr] = input[s];
-        if (sidechain != nullptr) {
-            scBuf[ch][inWtPtr] = sidechain[s];
-        }
         inWtPtr++;
         if (inWtPtr >= BUFLEN) {
             inWtPtr = 0;
         }
         double out = outBuf[ch][outRdPtr];
-//        double outDb = 10*log10(out*out);
-//        double newGainDb = -40.f-outDb;
-//        gainDb = smoothFactor*newGainDb+(1.0-smoothFactor)*gainDb;
-//        out *= pow(10, gainDb/10.0);
         double in = inBuf[ch][(inRdPtr+BUFLEN-FRAMELEN)%BUFLEN];
         inRdPtr++;
         if (inRdPtr >= BUFLEN) {
             inRdPtr = 0;
         }
-        float gainFactor = previousGain+slope*(float)s;
+        double gainFactor = previousGain+slope*(double)s;
         output[s] = lpcMix*gainFactor*out+(1-lpcMix)*in;
         outBuf[ch][outRdPtr] = 0;
         outRdPtr++;
@@ -183,30 +172,15 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
         smpCnt++;
         if (smpCnt >= validHopSize) {
             smpCnt = 0;
-            if (sidechain != nullptr) {
-                for (int i = 0; i < FRAMELEN; i++) {
-                    int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
-                    orderedInBuf[i] = window[i]*inBuf[ch][inBufIdx];
-                    orderedScBuf[i] = scBuf[ch][inBufIdx];
-                }
-            }
-            else {
-                for (int i = 0; i < FRAMELEN; i++) {
-                    int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
-                    orderedInBuf[i] = window[i]*inBuf[ch][inBufIdx];
-                }
+            for (int i = 0; i < FRAMELEN; i++) {
+                int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
+                orderedInBuf[i] = window[i]*inBuf[ch][inBufIdx];
             }
             for (int lag = 0; lag < ORDER+1; lag++) {
                 phi[lag] = autocorrelate(orderedInBuf, FRAMELEN, lag);
             }
             if (phi[0] != 0) {
-                levinson_durbin();
-                double G = phi[0];
-                for (int k = 0; k < ORDER; k++) {
-                    G -= alphas[k+1]*phi[k+1];
-                }
-                G = sqrt(G);//sqrt((double)(ORDER*FRAMELEN)));
-//                double G = 1.0;
+                double G = sqrt(levinson_durbin());
                 for (int n = 0; n < FRAMELEN; n++) {
                     double ex = (*noise)[exPtr];
                     exCntPtr++;

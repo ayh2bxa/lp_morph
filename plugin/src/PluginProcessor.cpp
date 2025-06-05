@@ -32,6 +32,9 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     lpcExTypeParameter = apvts.getRawParameterValue ("ex type");
     frameDurParameter = apvts.getRawParameterValue ("frame dur");
     isStandalone = wrapperType == wrapperType_Standalone;
+    AGCs.resize(2);
+    AGCs[0] = make_unique<AGC>(44100.0);
+    AGCs[1] = make_unique<AGC>(44100.0);
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
@@ -236,14 +239,7 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     for (int ch = 0; ch < numChannels; ch++) {
         auto *channelDataR = buffer.getReadPointer(ch);
         auto *channelDataW = buffer.getWritePointer(ch);
-        lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
-//        float rms = buffer.getRMSLevel(ch, 0, buffer.getNumSamples());
-//        if (rms > 1) {
-//            buffer.applyGain(ch, 0, buffer.getNumSamples(), 1.f/rms);
-//        }
-//        else if (isnan(rms)) {
-//            buffer.applyGain(ch, 0, buffer.getNumSamples(), 0.f);
-//        }
+        lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), previousGain, currentGain);
     }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {
         previousGain = currentGain;

@@ -2,6 +2,7 @@ import numpy as np
 from scipy import signal 
 import matplotlib.pyplot as plt 
 from scipy.signal import tf2zpk
+from scipy.fft import fft, fftfreq
 
 def plot_pole_zero(G, alphas, nfft, sr):
     plt.figure(figsize=(10, 8))
@@ -28,17 +29,34 @@ def plot_pole_zero(G, alphas, nfft, sr):
     plt.legend()
     plt.show()
 
-def analyse_alphas(G, alphas, input, nfft, sr):
+def analyse_alphas(G, alphas, input, nfft, sr, i):
     # Get the frequency response
-    w, h = signal.freqz(G, alphas, worN=nfft, fs=sr)
-    
+    w, h = signal.freqz(G, alphas, worN=nfft, whole=True, fs=sr)
     plt.figure(figsize=(12, 6))
-    
-    # Plot magnitude response in dB
-    plt.semilogx(w, 20 * np.log10(np.abs(h)))
-    plt.title(f'Frequency Response')
-    plt.ylabel('Magnitude (dB)')
-    plt.grid(True)
-    plt.semilogx(w, 20 * np.log10(np.abs(np.fft.fft(input, nfft))))
-    plt.tight_layout()
+    if len(input) < nfft:
+        tmp = np.zeros(nfft)
+        tmp[:len(input)] = input 
+        input = tmp
+    freqs = np.fft.fftfreq(nfft, 1/sr)
+    pos_mask = freqs >= 0
+    freqs = freqs[pos_mask]
+    Xmag = np.abs(np.fft.fft(input))
+    Xmag = Xmag[pos_mask]*2/nfft
+    h_pos = h[pos_mask]
+    # plt.semilogx(freqs, 20*np.log(Xmag))
+    # plt.semilogx(freqs, 20*np.log(np.abs(h_pos)))
+    t = np.arange(nfft)/sr
+    ht = np.real(np.fft.ifft(h))
+    plt.plot(t, input)
+    plt.plot(t, ht)
+    plt.title(str(i))
     plt.show()
+    # # Plot magnitude response in dB
+    # # plt.semilogx(w, 20 * np.log10(np.abs(h)))
+    # plt.plot(w, 20 * np.log10(np.abs(h)))
+    # plt.title(f'Frequency Response')
+    # plt.ylabel('Magnitude (dB)')
+    # plt.grid(True)
+    # plt.semilogx(w, 20 * np.log10(np.abs(fft(input))))
+    # plt.tight_layout()
+    # plt.show()

@@ -16,7 +16,7 @@ class LPC:
         self.ex_ptrs = [0] * num_channels
         self.hist_ptrs = [0] * num_channels
         self.ex_cnt_ptrs = [0] * num_channels
-        
+        self.i = 0
         # Initialize default parameters
         self.FRAMELEN = framelen
         self.nfft = int(2**np.ceil(np.log2(self.FRAMELEN)))
@@ -46,11 +46,11 @@ class LPC:
             self.in_rd_ptrs[ch] = 0
         
         # Initialize LPC coefficients and working arrays
+        self.maxFrameDurS = framelen/sr;
         self.phi = np.zeros(self.ORDER + 1)
         self.alphas = np.zeros(self.ORDER + 1)
-        self.reflections = np.zeros(self.ORDER)
-        self.ordered_in_buf = np.zeros(int(self.SAMPLERATE * 0.01))
-        self.window = np.zeros(int(self.SAMPLERATE * 0.01))
+        self.ordered_in_buf = np.zeros(int(self.SAMPLERATE * self.maxFrameDurS))
+        self.window = np.zeros(int(self.SAMPLERATE * self.maxFrameDurS))
         
         # Initialize multi-channel buffers
         self.in_buf = []
@@ -101,7 +101,6 @@ class LPC:
             for j in range(k + 1):
                 lbda += self.alphas[j] * self.phi[k + 1 - j]
             lbda = -lbda / E
-            self.reflections[k] = lbda
             
             half = (k + 1) // 2
             for n in range(half + 1):
@@ -110,6 +109,8 @@ class LPC:
                 self.alphas[k + 1 - n] = tmp
             
             E *= (1.0 - lbda * lbda)
+        
+        return E
     
     def prepare_to_play(self):
         # Resize arrays for new channel count
@@ -176,6 +177,7 @@ class LPC:
                 for i in range(self.FRAMELEN):
                     in_buf_idx = (in_wt_ptr + i - self.FRAMELEN + self.BUFLEN) % self.BUFLEN
                     self.ordered_in_buf[i] = self.window[i] * self.in_buf[ch][in_buf_idx]
+                    # self.ordered_in_buf[i] = self.in_buf[ch][in_buf_idx]
                 
                 # Compute autocorrelation
                 for lag in range(self.ORDER + 1):
@@ -183,19 +185,10 @@ class LPC:
                 
                 if self.phi[0] != 0:
                     # Compute LPC coefficients
-                    self.levinson_durbin()
+                    G = math.sqrt(self.levinson_durbin())
                     
-                    # Compute gain
-                    G = self.phi[0]
-                    for k in range(self.ORDER):
-                        G -= self.alphas[k + 1] * self.phi[k + 1]
-                    G = math.sqrt(G)
-                    fs = 44100
-                    f = 440
-                    t = np.array(range(fs))/fs
-                    x = np.sin(2*np.pi*f*t[:self.FRAMELEN])
-                    x *= self.window
-                    analyse_alphas(G, self.alphas, x, self.nfft, self.SAMPLERATE)
+                    analyse_alphas(G, self.alphas, self.ordered_in_buf, self.nfft, self.SAMPLERATE, self.i)
+                    self.i += 1
         
         # Store per-channel state
         self.in_rd_ptrs[ch] = in_rd_ptr
@@ -275,13 +268,9 @@ class LPC:
                 
                 if self.phi[0] != 0:
                     # Compute LPC coefficients
-                    self.levinson_durbin()
-                    
-                    # Compute gain
-                    G = self.phi[0]
-                    for k in range(self.ORDER):
-                        G -= self.alphas[k + 1] * self.phi[k + 1]
-                    G = math.sqrt(G)
+                    var = self.levinson_durbin()
+                    # if var >= 0:
+                    G = math.sqrt(var)
                     
                     # Generate output frame
                     for n in range(self.FRAMELEN):
