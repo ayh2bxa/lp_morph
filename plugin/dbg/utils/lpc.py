@@ -4,7 +4,7 @@ from .alphas_plot import analyse_alphas, plot_pole_zero
 import matplotlib.pyplot as plt
 
 class LPC:
-    def __init__(self, framelen=441, order=32, buflen=16384, num_channels=1, sr=44100):
+    def __init__(self, framelen=441, order=32, buflen=16384, num_channels=2, sr=44100):
         self.total_num_channels = num_channels
         
         # Initialize per-channel arrays

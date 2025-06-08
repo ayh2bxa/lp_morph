@@ -19,7 +19,10 @@ std::vector<double> read_wav_file(const std::string& filename, int& sample_rate)
     std::vector<double> data(sfinfo.frames);
     sf_read_double(file, data.data(), sfinfo.frames);
     sf_close(file);
-    
+    for (int i = 0; i < data.size(); i++) {
+        data[i] = (float)(data[i]);
+        data[i] = (double)(data[i]);
+    }
     return data;
 }
 

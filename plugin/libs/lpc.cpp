@@ -151,7 +151,7 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     double slope = (currentGain-previousGain)/numSamples;
     int validHopSize = min(HOPSIZE, prevFrameLen/2);
     for (int s = 0; s < numSamples; s++) {
-        inBuf[ch][inWtPtr] = input[s];
+        inBuf[ch][inWtPtr] = (double)input[s];
         inWtPtr++;
         if (inWtPtr >= BUFLEN) {
             inWtPtr = 0;

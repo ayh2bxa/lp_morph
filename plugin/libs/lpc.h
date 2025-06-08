@@ -2,8 +2,8 @@
 #include <array>
 #include <random>
 #include <cmath>
-#include <JuceHeader.h>
-#include "../src/ParameterHelper.h"
+// #include <JuceHeader.h>
+// #include "../src/ParameterHelper.h"
 
 using namespace std;
 
@@ -42,6 +42,8 @@ private:
     double smoothFactor = pow(2.71828182845904523536, -1.0/44100.0);
     double s1, s2, s3 = 0.0;
 public:
+    int MAX_ORDER = 64;
+    int MAX_FRAME_DUR = 50;
     double gainDb = 0.0;
     LPC(int numChannels);
     bool start = false;

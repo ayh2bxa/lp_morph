@@ -41,8 +41,8 @@ VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
 {
 }
 
-// Function to load a WAV file into a vector<float>
-std::vector<double> loadEmbeddedWavToBuffer(const void* data, size_t dataSize)
+// Function to load a WAV file into a vector<double>
+std::vector<double> loadEmbeddedWavToBuffer(const void* data, size_t dataSize, bool dbg=false)
 {
     if (data != nullptr && dataSize > 0) {
         size_t numSamples = dataSize / 2;
@@ -52,6 +52,12 @@ std::vector<double> loadEmbeddedWavToBuffer(const void* data, size_t dataSize)
         for (size_t i = 0; i < numSamples; ++i)
         {
             samples.push_back(static_cast<double>(sampleData[i]) / 32768.0);
+            if (dbg) {
+                DBG("i: " << i << ", value: " << static_cast<double>(sampleData[i]) / 32768.0);
+            }
+        }
+        if (dbg) {
+            DBG("stop here");
         }
         return samples;
     }
@@ -77,7 +83,7 @@ void VoicemorphAudioProcessor::loadFactoryExcitations() {
     auto trainScreech2Audio = loadEmbeddedWavToBuffer(BinaryData::TrainScreech2_wav_bin, BinaryData::TrainScreech2_wav_binSize);
     factoryExcitations.push_back(trainScreech2Audio);
     
-    auto whiteNoiseAudio = loadEmbeddedWavToBuffer(BinaryData::WhiteNoise_wav_bin, BinaryData::WhiteNoise_wav_binSize);
+    auto whiteNoiseAudio = loadEmbeddedWavToBuffer(BinaryData::WhiteNoise_wav_bin, BinaryData::WhiteNoise_wav_binSize, true);
     factoryExcitations.push_back(whiteNoiseAudio);
 
     lpc.noise = &factoryExcitations[6];
@@ -188,8 +194,8 @@ void VoicemorphAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     // initialisation that you need..
     previousGain = (*gainParameter).load();
     previousGain = juce::Decibels::decibelsToGain(previousGain);
-    updateLpcParams();
-    lpc.prepareToPlay();
+//    updateLpcParams();
+//    lpc.prepareToPlay();
 }
 
 void VoicemorphAudioProcessor::releaseResources()
@@ -233,13 +239,16 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
-    updateLpcParams();
+//    updateLpcParams();
     currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
+//    DBG("Block size: " << buffer.getNumSamples());
+//    DBG("DAW setting: " << getBlockSize()); // if accessible
     for (int ch = 0; ch < numChannels; ch++) {
         auto *channelDataR = buffer.getReadPointer(ch);
         auto *channelDataW = buffer.getWritePointer(ch);
-        lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), previousGain, currentGain);
+//        lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), previousGain, currentGain);
+        lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), 1.f, 1.f, ch, 0.f, 1.f, 1.f);
     }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {
         previousGain = currentGain;

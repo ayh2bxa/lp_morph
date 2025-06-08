@@ -74,4 +74,5 @@ private:
     float attackCoeff;
     float releaseCoeff;
     float rmsCoeff;
+    size_t counter = 0;
 };
