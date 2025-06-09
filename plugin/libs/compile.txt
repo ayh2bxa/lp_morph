@@ -1,0 +1,2 @@
+g++ -O2 -std=c++20 lpc_realtime_test.cpp lpc.cpp -o lpc_realtime_test
+g++ -O2 -std=c++20 lpc_test.cpp lpc.cpp -lsndfile -o lpc_test

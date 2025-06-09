@@ -3,6 +3,9 @@
 #include <vector>
 #include <chrono>
 #include <random>
+#include <fstream>
+#include <sndfile.h>
+#include <cmath>
 
 int main() {
     const int sample_rate = 44100;
@@ -47,11 +50,11 @@ int main() {
     
     std::cout << "\nStarting processing..." << std::endl;
     const int num_blocks = total_samples / block_size;
-    auto start_time = std::chrono::high_resolution_clock::now();
+    double avg_rtf = 0;
     // Process in blocks like a real DAW would
     for (int block = 0; block < num_blocks; block++) {
         const int start_idx = block * block_size;
-        
+        auto start_time = std::chrono::high_resolution_clock::now();
         for (int ch = 0; ch < num_channels; ch++) {
             lpc.applyLPC(
                 &input_signal[start_idx],
@@ -65,25 +68,29 @@ int main() {
                 1.0    // current_gain
             );
         }
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        double processing_time_seconds = duration.count() / 1000000.0;
+        double rtf = processing_time_seconds/((double)block_size/(double)sample_rate);
+        if (rtf >= 1.0) {
+            std::cout<< "real-time fail at " << block*((double)block_size/(double)sample_rate) << "s" << std::endl;
+        }
+        // avg_rtf += (processing_time_seconds/((double)block_size/(double)sample_rate));
     }
     
-    auto end_time = std::chrono::high_resolution_clock::now();
+    // double real_time_factor = avg_rtf / num_blocks;
     
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    double processing_time_seconds = duration.count() / 1000.0;
+    // std::cout << "\nResults:" << std::endl;
+    // std::cout << "Audio duration: " << ((double)block_size/(double)sample_rate) << " seconds" << std::endl;
+    // std::cout << "Real-time factor: " << real_time_factor << std::endl;
     
-    double real_time_factor = test_duration_seconds / processing_time_seconds;
-    
-    std::cout << "\nResults:" << std::endl;
-    std::cout << "Audio duration: " << test_duration_seconds << " seconds" << std::endl;
-    std::cout << "Processing time: " << processing_time_seconds << " seconds" << std::endl;
-    std::cout << "Real-time factor: " << real_time_factor << "x" << std::endl;
-    
-    if (real_time_factor >= 1.0) {
-        std::cout << "✓ REAL-TIME CAPABLE (" << real_time_factor << "x faster than real-time)" << std::endl;
-    } else {
-        std::cout << "✗ NOT REAL-TIME CAPABLE (" << (1.0/real_time_factor) << "x slower than real-time)" << std::endl;
-    }
+    // if (real_time_factor < 1.0) {
+    //     std::cout << "✓ REAL-TIME CAPABLE (" << (1.0/real_time_factor) << "x faster than real-time)" << std::endl;
+    // } else {
+    //     std::cout << "✗ NOT REAL-TIME CAPABLE (" << real_time_factor << "x slower than real-time)" << std::endl;
+    // }
     
     return 0;
 }
+// 214/48000 = 0.004458333333
+// 197/44100 = 0.004467120181

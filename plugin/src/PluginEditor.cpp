@@ -22,7 +22,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     lpcLabel.setText("Mix", juce::dontSendNotification);
     lpcLabel.attachToComponent(&lpcSlider, false);
     addAndMakeVisible(lpcLabel);
-    lpcMixAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpc mix", lpcSlider));
+    lpcMixAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpcMix", lpcSlider));
     
     exLenSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     exLenSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -30,7 +30,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     exLenLabel.setText("Length", juce::dontSendNotification);
     exLenLabel.attachToComponent(&exLenSlider, false);
     addAndMakeVisible(exLenLabel);
-    exLenAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "ex len", exLenSlider));
+    exLenAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "exLen", exLenSlider));
 
     exStartSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     exStartSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -38,7 +38,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     exStartLabel.setText("Start", juce::dontSendNotification);
     exStartLabel.attachToComponent(&exStartSlider, false);
     addAndMakeVisible(exStartLabel);
-    exStartAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "ex start pos", exStartSlider));
+    exStartAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "exStartPos", exStartSlider));
     
     orderSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     orderSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -46,7 +46,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     orderLabel.setText("Order", juce::dontSendNotification);
     orderLabel.attachToComponent(&orderSlider, false);
     addAndMakeVisible(orderLabel);
-    orderAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpc order", orderSlider));
+    orderAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpcOrder", orderSlider));
     
     wetGainSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     wetGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -54,7 +54,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     wetGainLabel.setText("Wet gain (dB)", juce::dontSendNotification);
     wetGainLabel.attachToComponent(&wetGainSlider, false);
     addAndMakeVisible(wetGainLabel);
-    wetGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "wet gain", wetGainSlider));
+    wetGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "wetGain", wetGainSlider));
     
     frameDurSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     frameDurSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
@@ -62,7 +62,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     frameDurLabel.setText("Frame Duration (ms)", juce::dontSendNotification);
     frameDurLabel.attachToComponent(&frameDurSlider, false);
     addAndMakeVisible(frameDurLabel);
-    frameDurAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "frame dur", frameDurSlider));
+    frameDurAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "frameDur", frameDurSlider));
     
     
     excitationDropdown.addItem("BassyTrainNoise", 1);
@@ -75,7 +75,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     excitationDropdown.addItem("Off", 8);
     addAndMakeVisible(excitationDropdown);
     excitationDropdown.addListener(this);
-    int exType = vts.getParameterAsValue("ex type").getValue();
+    int exType = vts.getParameterAsValue("exType").getValue();
     excitationDropdown.setSelectedId(1+exType, juce::dontSendNotification);
     
     customExcitationDropdown.addItem("No custom files loaded", 1);
@@ -133,14 +133,14 @@ void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxTha
     if (comboBoxThatHasChanged == &excitationDropdown) {
         int selectedId = excitationDropdown.getSelectedId();
         if (selectedId != 8) {
-            audioProcessor.apvts.getParameterAsValue("ex type").setValue(selectedId-1);
+            audioProcessor.apvts.getParameterAsValue("exType").setValue(selectedId-1);
             audioProcessor.setUsingCustomExcitation(false);
             if (customExcitationDropdown.isEnabled()) {
                 auto customFiles = audioProcessor.getCustomExcitationFiles();
                 customExcitationDropdown.setSelectedId(customFiles.size() + 1, juce::dontSendNotification);
             }
         } else {
-            audioProcessor.apvts.getParameterAsValue("ex type").setValue(7);
+            audioProcessor.apvts.getParameterAsValue("exType").setValue(7);
             audioProcessor.setUsingCustomExcitation(false);
         }
     }
@@ -154,7 +154,7 @@ void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxTha
             excitationDropdown.setSelectedId(8, juce::dontSendNotification);
         } else if (selectedId == customFiles.size() + 1) {
             audioProcessor.setUsingCustomExcitation(false);
-            audioProcessor.apvts.getParameterAsValue("ex type").setValue(7);
+            audioProcessor.apvts.getParameterAsValue("exType").setValue(7);
         }
     }
 }
