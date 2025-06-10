@@ -182,7 +182,6 @@ void VoicemorphAudioProcessor::updateLpcParams() {
         }
         lpc.HOPSIZE = lpc.FRAMELEN/2;
     }
-    lpc.gainDb = 0.0;
 }
 
 //==============================================================================
@@ -240,12 +239,19 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     updateLpcParams();
     currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
-//    DBG("Block size: " << buffer.getNumSamples());
-//    DBG("DAW setting: " << getBlockSize()); // if accessible
     for (int ch = 0; ch < numChannels; ch++) {
         auto *channelDataR = buffer.getReadPointer(ch);
         auto *channelDataW = buffer.getWritePointer(ch);
         lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), previousGain, currentGain);
+        for (int s = 0; s < buffer.getNumSamples(); s++) {
+            float val = channelDataR[s];
+            if (isnan(val)) {
+                channelDataW[s] = 0.f;
+            }
+            else if (abs(val) > 1.f) {
+                channelDataW[s] /= (2.f*abs(val));
+            }
+        }
     }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {
         previousGain = currentGain;
