@@ -4,6 +4,8 @@ LPC::LPC(int numChannels) {
     double maxFrameDurS = MAX_FRAME_DUR/1000.0;
     ORDER = MAX_ORDER;
     FRAMELEN = (int)(SAMPLERATE*maxFrameDurS);
+    prevFrameLen = FRAMELEN;
+    HOPSIZE = FRAMELEN/2;
     totalNumChannels = numChannels;
     inWtPtrs.resize(numChannels);
     inRdPtrs.resize(numChannels);
@@ -25,8 +27,8 @@ LPC::LPC(int numChannels) {
     }
     phi.resize(ORDER+1);
     alphas.resize(ORDER+1);
-    orderedInBuf.resize(SAMPLERATE*maxFrameDurS);
-    window.resize(SAMPLERATE*maxFrameDurS);
+    orderedInBuf.resize(FRAMELEN);
+    window.resize(FRAMELEN);
     inBuf.resize(numChannels);
     outBuf.resize(numChannels);
     out_hist.resize(numChannels);
@@ -95,6 +97,11 @@ void LPC::prepareToPlay() {
     exPtrs.resize(totalNumChannels);
     histPtrs.resize(totalNumChannels);
     exCntPtrs.resize(totalNumChannels);
+    HOPSIZE = FRAMELEN/2;
+    prevFrameLen = FRAMELEN;
+    for (int i = 0; i < FRAMELEN; i++) {
+        window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(FRAMELEN-1)));
+    }
     for (int ch = 0; ch < totalNumChannels; ch++) {
         inWtPtrs[ch] = 0;
         smpCnts[ch] = 0;
@@ -115,7 +122,7 @@ void LPC::prepareToPlay() {
     }
 }
 
-void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, double previousGain, double currentGain) {
+bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, double previousGain, double currentGain) {
     if (noise == nullptr) {
         return;
     }
@@ -124,15 +131,6 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     smpCnt = smpCnts[ch];
     outRdPtr = outRdPtrs[ch];
     outWtPtr = (outRdPtr+HOPSIZE)%BUFLEN;
-    if (HOPSIZE < prevFrameLen/2) {
-        for (int i = 0; i < prevFrameLen/2-HOPSIZE; i++) {
-            int idx = outWtPtr+i;
-            if (idx >= BUFLEN) {
-                idx -= BUFLEN;
-            }
-            outBuf[ch][idx] = 0;
-        }
-    }
     int exStart = static_cast<int>(exStartPos*EXLEN);
     if (exTypeChanged) {
         exPtrs[ch] = exStart;
@@ -149,7 +147,7 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     exCntPtr = exCntPtrs[ch];
     histPtr = histPtrs[ch];
     double slope = (currentGain-previousGain)/numSamples;
-    int validHopSize = min(HOPSIZE, prevFrameLen/2);
+    bool audioWarning = false;
     for (int s = 0; s < numSamples; s++) {
         inBuf[ch][inWtPtr] = (double)input[s];
         inWtPtr++;
@@ -163,7 +161,16 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
             inRdPtr = 0;
         }
         double gainFactor = previousGain+slope*(double)s;
-        output[s] = lpcMix*gainFactor*out+(1-lpcMix)*in;
+        float final_out = lpcMix*gainFactor*out+(1-lpcMix)*in;
+        if (isnan(final_out)) {
+            audioWarning = true;
+            final_out = 0.f;
+        }
+        else if (fabsf(final_out) > 1.f) {
+            audioWarning = true;
+            final_out /= (2.f*fabsf(final_out));
+        }
+        output[s] = final_out;
         outBuf[ch][outRdPtr] = 0;
         outRdPtr++;
         if (outRdPtr >= BUFLEN) {
@@ -203,7 +210,17 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                     }
                     out_hist[ch][histPtr] = out_n;
                     unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
-                    outBuf[ch][wtIdx] += out_n;
+                    double preOlaVal = outBuf[ch][wtIdx];
+                    // Change of frame length can cause OLA to add with unwanted audio
+                    // in a correct scenario, OLA with 50% overlap will always be adding with 0s in
+                    // the last HOPSIZE-many samples, so just set the last HOPSIZE-many outputs to
+                    // be equal to out_n
+                    if (n < HOPSIZE) {
+                        outBuf[ch][wtIdx] += out_n;
+                    }
+                    else {
+                        outBuf[ch][wtIdx] = out_n;
+                    }
                 }
                 for (int i = 0; i < out_hist[ch].size(); i++) {
                     out_hist[ch][i] = 0;
@@ -223,6 +240,7 @@ void LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     outRdPtrs[ch] = outRdPtr;
     exPtrs[ch] = exPtr;
     histPtrs[ch] = histPtr;
+    return audioWarning;
 }
 
 void LPC::reset_a() {

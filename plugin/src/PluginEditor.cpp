@@ -104,10 +104,10 @@ VoicemorphAudioProcessorEditor::~VoicemorphAudioProcessorEditor()
 void VoicemorphAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillAll (juce::Colours::black);
 
-    g.setColour (juce::Colours::white);
-    auto inputLineColour = juce::Colours::white;
+    g.setColour (juce::Colours::black);
+    auto inputLineColour = juce::Colours::black;
     auto estimatedFilterLineColour = juce::Colours::red;
     
 }

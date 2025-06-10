@@ -2,8 +2,8 @@
 #include <array>
 #include <random>
 #include <cmath>
-//#include <JuceHeader.h>
-// #include "../src/ParameterHelper.h"
+#include <JuceHeader.h>
+#include "../src/ParameterHelper.h"
 
 using namespace std;
 
@@ -39,12 +39,7 @@ private:
     vector<int> exCntPtrs;
     vector<int> histPtrs;
     int totalNumChannels;
-    double smoothFactor = pow(2.71828182845904523536, -1.0/44100.0);
-    double s1, s2, s3 = 0.0;
 public:
-    int MAX_ORDER = 64;
-    int MAX_FRAME_DUR = 50;
-    double gainDb = 0.0;
     LPC(int numChannels);
     bool start = false;
     void applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, double previousGain, double currentGain);
@@ -52,14 +47,14 @@ public:
     int get_exlen() {return EXLEN;}
     int get_max_exlen() {return MAX_EXLEN;}
     const std::vector<double>* noise = nullptr;
-    int FRAMELEN = 2205;
-    int prevFrameLen = FRAMELEN;
-    int HOPSIZE = FRAMELEN/2;
-    int BUFLEN = 16384;
+    int FRAMELEN;
+    int prevFrameLen;
+    int HOPSIZE;
+    int BUFLEN = 4096;
     int SAMPLERATE = 44100;
     int MAX_EXLEN = SAMPLERATE/6;
     int EXLEN = MAX_EXLEN;
-    int ORDER = 64;
+    int ORDER;
     int exType = 0;
     bool orderChanged = false;
     bool exTypeChanged = false;

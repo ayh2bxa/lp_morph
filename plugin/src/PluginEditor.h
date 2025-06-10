@@ -58,10 +58,6 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exStartAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> orderAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frameDurAttachment;
-    
-    juce::Image spectrumImage;
-    
-    std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };
