@@ -12,8 +12,8 @@ From the input speech signal, LPC derives a set of coefficients to represent its
 
 But what if the input is not restricted to voice, but can also be drums, or synths, or any other sounds? Although linear prediction cannot accurately model every acoustic system as it does our vocal tracts, the unpredictability of its modelling ability on non-speech audio gives it artistic potential, which is the key motivation behind building this plugin.
 
-LP Morph applies real-time LPC to input audio, and allows control of the following parameters:
 
+LP Morph applies real-time LPC to input audio, and allows control of the following parameters:
 
 1. Mix: controls the dry/wet percentage of LPC effect.
 2. Order: the number of coefficients used to characterise the input. Higher order means greater resolution.
