@@ -1,7 +1,6 @@
 Builds/
 *.wav
 *.bin
-resources
 *.icns
 cmaketemplate
 build
