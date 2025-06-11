@@ -42,7 +42,7 @@ private:
 public:
     LPC(int numChannels);
     bool start = false;
-    void applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, double previousGain, double currentGain);
+    bool applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain);
     void set_exlen(int val) {EXLEN = val;}
     int get_exlen() {return EXLEN;}
     int get_max_exlen() {return MAX_EXLEN;}

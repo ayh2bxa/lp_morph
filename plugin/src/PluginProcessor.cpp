@@ -12,14 +12,17 @@
 //==============================================================================
 VoicemorphAudioProcessor::VoicemorphAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
-                    #if ! JucePlugin_IsMidiEffect
-                     #if ! JucePlugin_IsSynth
-                      .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+    : AudioProcessor (BusesProperties()
+                   #if ! JucePlugin_IsMidiEffect
+                    #if ! JucePlugin_IsSynth
+                     .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                     #if ! JucePlugin_IsStandalone
+                      .withInput ("Sidechain", juce::AudioChannelSet::stereo(), true)
                      #endif
-                      .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                     #endif
-                      ),
+                     .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                   #endif
+                     ),
 lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::ParameterHelper::createParameterLayout())
 #endif
 {
@@ -31,6 +34,7 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     lpcOrderParameter = apvts.getRawParameterValue ("lpcOrder");
     lpcExTypeParameter = apvts.getRawParameterValue ("exType");
     frameDurParameter = apvts.getRawParameterValue ("frameDur");
+    useSidechainParameter = apvts.getRawParameterValue ("useSidechain");
     isStandalone = wrapperType == wrapperType_Standalone;
 }
 
@@ -49,12 +53,6 @@ std::vector<double> loadEmbeddedWavToBuffer(const void* data, size_t dataSize, b
         for (size_t i = 0; i < numSamples; ++i)
         {
             samples.push_back(static_cast<double>(sampleData[i]) / 32768.0);
-            if (dbg) {
-                DBG("i: " << i << ", value: " << static_cast<double>(sampleData[i]) / 32768.0);
-            }
-        }
-        if (dbg) {
-            DBG("stop here");
         }
         return samples;
     }
@@ -182,7 +180,6 @@ void VoicemorphAudioProcessor::updateLpcParams() {
         }
         lpc.HOPSIZE = lpc.FRAMELEN/2;
     }
-    lpc.gainDb = 0.0;
 }
 
 //==============================================================================
@@ -240,12 +237,30 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     updateLpcParams();
     currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
-//    DBG("Block size: " << buffer.getNumSamples());
-//    DBG("DAW setting: " << getBlockSize()); // if accessible
-    for (int ch = 0; ch < numChannels; ch++) {
-        auto *channelDataR = buffer.getReadPointer(ch);
-        auto *channelDataW = buffer.getWritePointer(ch);
-        lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), previousGain, currentGain);
+    bool useSidechain = (!JUCEApplication::isStandaloneApp()) && static_cast<bool>((*useSidechainParameter).load());
+    if (useSidechain) {
+        const float *sidechainData = nullptr;
+        auto* scBus = getBus(true, 1);
+        AudioBuffer<float> sidechainBuffer;
+        AudioBuffer<float> inputBuffer = getBusBuffer(buffer, true, 0);;
+        if (scBus != nullptr && scBus->isEnabled()) {
+            sidechainBuffer = getBusBuffer (buffer, true, 1);
+            auto outputBuffer = getBusBuffer (buffer, false, 0);
+            numChannels = juce::jmin (sidechainBuffer.getNumChannels(), outputBuffer.getNumChannels());
+        }
+        for (int ch = 0; ch < numChannels; ch++) {
+            auto *channelDataR = inputBuffer.getReadPointer(ch);
+            auto *channelDataW = inputBuffer.getWritePointer(ch);
+            sidechainData = sidechainBuffer.getReadPointer(ch);
+            lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
+        }
+    }
+    else {
+        for (int ch = 0; ch < numChannels; ch++) {
+            auto *channelDataR = buffer.getReadPointer(ch);
+            auto *channelDataW = buffer.getWritePointer(ch);
+            lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+        }
     }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {
         previousGain = currentGain;

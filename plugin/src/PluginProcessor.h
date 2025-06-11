@@ -84,6 +84,7 @@ private:
     std::atomic<float>* lpcExStartParameter  = nullptr;
     std::atomic<float>* lpcExTypeParameter  = nullptr;
     std::atomic<float>* frameDurParameter  = nullptr;
+    std::atomic<float>* useSidechainParameter  = nullptr;
     bool isStandalone;
     bool usingCustomExcitation = false;
     int currentCustomExcitationIndex = -1;

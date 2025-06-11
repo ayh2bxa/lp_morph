@@ -30,14 +30,12 @@ public:
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
     void buttonClicked(juce::Button *b) override;
     void timerCallback() override;
-    void updateCustomExcitationDropdown();
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     VoicemorphAudioProcessor& audioProcessor;
     ComboBox excitationDropdown;
     ComboBox customExcitationDropdown;
-    juce::TextButton customButton;
     juce::Slider lpcSlider;
     juce::Label lpcLabel;
     juce::Slider exLenSlider;
@@ -51,6 +49,7 @@ private:
     Slider frameDurSlider;
     Label frameDurLabel;
     juce::TextButton contactButton;
+    juce::ToggleButton sidechainButton;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> wetGainAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> lpcMixAttachment;
@@ -58,6 +57,10 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> exStartAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> orderAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frameDurAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> useSidechainAttachment;
+    
+    juce::Colour readingsColour = juce::Colour(0x1000281); //juce::Colours::black;
+    juce::Colour bgColour = juce::Colour(0xffdddddd);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };

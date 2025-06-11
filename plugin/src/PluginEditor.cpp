@@ -11,7 +11,7 @@
 
 //==============================================================================
 VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
-    : AudioProcessorEditor (&p), audioProcessor (p), spectrumImage (juce::Image::RGB, 512, 512, true)
+    : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setOpaque (true);
     startTimerHz(30);
@@ -21,6 +21,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(lpcSlider);
     lpcLabel.setText("Mix", juce::dontSendNotification);
     lpcLabel.attachToComponent(&lpcSlider, false);
+//    lpcLabel.setColour (juce::Label::textColourId, readingsColour);
     addAndMakeVisible(lpcLabel);
     lpcMixAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpcMix", lpcSlider));
     
@@ -29,6 +30,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(exLenSlider);
     exLenLabel.setText("Length", juce::dontSendNotification);
     exLenLabel.attachToComponent(&exLenSlider, false);
+//    exLenLabel.setColour (juce::Label::textColourId, readingsColour);
     addAndMakeVisible(exLenLabel);
     exLenAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "exLen", exLenSlider));
 
@@ -37,6 +39,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(exStartSlider);
     exStartLabel.setText("Start", juce::dontSendNotification);
     exStartLabel.attachToComponent(&exStartSlider, false);
+//    exStartLabel.setColour (juce::Label::textColourId, readingsColour);
     addAndMakeVisible(exStartLabel);
     exStartAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "exStartPos", exStartSlider));
     
@@ -45,6 +48,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(orderSlider);
     orderLabel.setText("Order", juce::dontSendNotification);
     orderLabel.attachToComponent(&orderSlider, false);
+//    orderLabel.setColour (juce::Label::textColourId, readingsColour);
     addAndMakeVisible(orderLabel);
     orderAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpcOrder", orderSlider));
     
@@ -53,6 +57,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(wetGainSlider);
     wetGainLabel.setText("Wet gain (dB)", juce::dontSendNotification);
     wetGainLabel.attachToComponent(&wetGainSlider, false);
+//    wetGainLabel.setColour (juce::Label::textColourId, readingsColour);
     addAndMakeVisible(wetGainLabel);
     wetGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "wetGain", wetGainSlider));
     
@@ -61,9 +66,18 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     addAndMakeVisible(frameDurSlider);
     frameDurLabel.setText("Frame Duration (ms)", juce::dontSendNotification);
     frameDurLabel.attachToComponent(&frameDurSlider, false);
+//    frameDurLabel.setColour (juce::Label::textColourId, readingsColour);
     addAndMakeVisible(frameDurLabel);
     frameDurAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "frameDur", frameDurSlider));
     
+    sidechainButton.setButtonText ("Sidechain");
+//    sidechainButton.setColour (juce::Label::textColourId, readingsColour);
+    addAndMakeVisible(sidechainButton);
+    sidechainButton.setVisible(!JUCEApplication::isStandaloneApp());
+    sidechainButton.addListener(this);
+    exLenSlider.setVisible(!sidechainButton.getToggleState());
+    exStartSlider.setVisible(!sidechainButton.getToggleState());
+    useSidechainAttachment.reset (new juce::AudioProcessorValueTreeState::ButtonAttachment (vts, "useSidechain", sidechainButton));
     
     excitationDropdown.addItem("BassyTrainNoise", 1);
     excitationDropdown.addItem("CherubScreams", 2);
@@ -72,20 +86,11 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     excitationDropdown.addItem("TrainScreech1", 5);
     excitationDropdown.addItem("TrainScreech2", 6);
     excitationDropdown.addItem("WhiteNoise", 7);
-    excitationDropdown.addItem("Off", 8);
+//    excitationDropdown.setColour (juce::Label::textColourId, bgColour);
     addAndMakeVisible(excitationDropdown);
     excitationDropdown.addListener(this);
     int exType = vts.getParameterAsValue("exType").getValue();
     excitationDropdown.setSelectedId(1+exType, juce::dontSendNotification);
-    
-    customExcitationDropdown.addItem("No custom files loaded", 1);
-    customExcitationDropdown.setEnabled(false);
-    addAndMakeVisible(customExcitationDropdown);
-    customExcitationDropdown.addListener(this);
-    
-    customButton.setButtonText("Custom");
-    customButton.addListener(this);
-    addAndMakeVisible(customButton);
     
     contactButton.setButtonText("Contact Author :-)))");
     contactButton.addListener(this);
@@ -104,10 +109,10 @@ VoicemorphAudioProcessorEditor::~VoicemorphAudioProcessorEditor()
 void VoicemorphAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (juce::Colours::black);
-
-    g.setColour (juce::Colours::black);
-    auto inputLineColour = juce::Colours::black;
+    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+//    g.fillAll (bgColour);
+    g.setColour (juce::Colours::white);
+    auto inputLineColour = juce::Colours::white;
     auto estimatedFilterLineColour = juce::Colours::red;
     
 }
@@ -116,46 +121,21 @@ void VoicemorphAudioProcessorEditor::resized()
 {
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
-    lpcSlider.setBoundsRelative(0.04, 0.05, 0.28, 0.15);
-    exLenSlider.setBoundsRelative(0.36, 0.05, 0.28, 0.15);
-    exStartSlider.setBoundsRelative(0.68, 0.05, 0.28, 0.15);
-    orderSlider.setBoundsRelative(0.04, 0.3, 0.28, 0.15);
-    wetGainSlider.setBoundsRelative(0.36, 0.3, 0.28, 0.15);
-    frameDurSlider.setBoundsRelative(0.68, 0.3, 0.28, 0.15);
-    excitationDropdown.setBoundsRelative(0.04, 0.9, 0.28, 0.04);
-    customExcitationDropdown.setBoundsRelative(0.36, 0.9, 0.28, 0.04);
-    customButton.setBoundsRelative(0.68, 0.9, 0.28, 0.04);
-    contactButton.setBoundsRelative(0.36, 0.95, 0.28, 0.04);
+    lpcSlider.setBoundsRelative(0.04, 0.1, 0.28, 0.3);
+    exLenSlider.setBoundsRelative(0.36, 0.1, 0.28, 0.3);
+    exStartSlider.setBoundsRelative(0.68, 0.1, 0.28, 0.3);
+    orderSlider.setBoundsRelative(0.04, 0.5, 0.28, 0.3);
+    wetGainSlider.setBoundsRelative(0.36, 0.5, 0.28, 0.3);
+    frameDurSlider.setBoundsRelative(0.68, 0.5, 0.28, 0.3);
+    excitationDropdown.setBoundsRelative(0.04, 0.9, 0.28, 0.05);
+//    sidechainButton.setBoundsRelative(0.36, 0.9, 0.28, 0.05);
+    contactButton.setBoundsRelative(0.68, 0.9, 0.28, 0.05);
 }
 
 void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 {
     if (comboBoxThatHasChanged == &excitationDropdown) {
-        int selectedId = excitationDropdown.getSelectedId();
-        if (selectedId != 8) {
-            audioProcessor.apvts.getParameterAsValue("exType").setValue(selectedId-1);
-            audioProcessor.setUsingCustomExcitation(false);
-            if (customExcitationDropdown.isEnabled()) {
-                auto customFiles = audioProcessor.getCustomExcitationFiles();
-                customExcitationDropdown.setSelectedId(customFiles.size() + 1, juce::dontSendNotification);
-            }
-        } else {
-            audioProcessor.apvts.getParameterAsValue("exType").setValue(7);
-            audioProcessor.setUsingCustomExcitation(false);
-        }
-    }
-    else if (comboBoxThatHasChanged == &customExcitationDropdown) {
-        auto customFiles = audioProcessor.getCustomExcitationFiles();
-        int selectedId = customExcitationDropdown.getSelectedId();
-        
-        if (selectedId > 0 && selectedId <= customFiles.size()) {
-            audioProcessor.setCustomExcitation(selectedId-1);
-            audioProcessor.setUsingCustomExcitation(true);
-            excitationDropdown.setSelectedId(8, juce::dontSendNotification);
-        } else if (selectedId == customFiles.size() + 1) {
-            audioProcessor.setUsingCustomExcitation(false);
-            audioProcessor.apvts.getParameterAsValue("exType").setValue(7);
-        }
+        audioProcessor.apvts.getParameterAsValue("exType").setValue(excitationDropdown.getSelectedId()-1);
     }
 }
 
@@ -167,38 +147,12 @@ void VoicemorphAudioProcessorEditor::buttonClicked(juce::Button* b)
             url.launchInDefaultBrowser();
         }
     }
-    else if (b == &customButton) {
-        chooser = std::make_unique<juce::FileChooser> ("Select a WAV file", juce::File{}, "*.wav");
-        auto chooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
-        chooser->launchAsync(chooserFlags,
-                               [this](const juce::FileChooser& fc)
-                               {
-            juce::File selectedFile = fc.getResult();
-            if (selectedFile.existsAsFile()) {
-                audioProcessor.loadCustomExcitations(selectedFile);
-                updateCustomExcitationDropdown();
-            }
-        });
+    else if (b == &sidechainButton) {
+        exLenSlider.setVisible(!b->getToggleState());
+        exStartSlider.setVisible(!b->getToggleState());
     }
 }
 
 void VoicemorphAudioProcessorEditor::timerCallback() {
     
-}
-
-void VoicemorphAudioProcessorEditor::updateCustomExcitationDropdown() {
-    customExcitationDropdown.clear();
-    auto customFiles = audioProcessor.getCustomExcitationFiles();
-    
-    if (customFiles.empty()) {
-        customExcitationDropdown.addItem("No custom files loaded", 1);
-        customExcitationDropdown.setEnabled(false);
-    } else {
-        for (int i = 0; i < customFiles.size(); ++i) {
-            customExcitationDropdown.addItem(customFiles[i].getFileNameWithoutExtension(), i + 1);
-        }
-        customExcitationDropdown.addItem("Off", customFiles.size() + 1);
-        customExcitationDropdown.setEnabled(true);
-        customExcitationDropdown.setSelectedId(customFiles.size() + 1, juce::dontSendNotification);
-    }
 }

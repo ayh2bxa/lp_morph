@@ -28,6 +28,7 @@ LPC::LPC(int numChannels) {
     phi.resize(ORDER+1);
     alphas.resize(ORDER+1);
     orderedInBuf.resize(FRAMELEN);
+    orderedScBuf.resize(FRAMELEN);
     window.resize(FRAMELEN);
     inBuf.resize(numChannels);
     outBuf.resize(numChannels);
@@ -51,6 +52,7 @@ LPC::LPC(int numChannels) {
     }
     for (int i = 0; i < orderedInBuf.size(); i++) {
         orderedInBuf[i] = 0.0;
+        orderedScBuf[i] = 0.0;
     }
     for (int i = 0; i < ORDER; i++) {
         phi[i] = 0.0;
@@ -122,7 +124,7 @@ void LPC::prepareToPlay() {
     }
 }
 
-bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, double previousGain, double currentGain) {
+bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain) {
     if (noise == nullptr) {
         return;
     }
@@ -150,6 +152,9 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     bool audioWarning = false;
     for (int s = 0; s < numSamples; s++) {
         inBuf[ch][inWtPtr] = (double)input[s];
+        if (sidechain != nullptr) {
+            scBuf[ch][inWtPtr] = sidechain[s];
+        }
         inWtPtr++;
         if (inWtPtr >= BUFLEN) {
             inWtPtr = 0;
@@ -177,49 +182,80 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
             outRdPtr = 0;
         }
         smpCnt++;
-        if (smpCnt >= validHopSize) {
+        if (smpCnt >= HOPSIZE) {
             smpCnt = 0;
             for (int i = 0; i < FRAMELEN; i++) {
                 int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
                 orderedInBuf[i] = window[i]*inBuf[ch][inBufIdx];
+            }
+            if (sidechain != nullptr) {
+                for (int i = 0; i < FRAMELEN; i++) {
+                    int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
+                    orderedScBuf[i] = scBuf[ch][inBufIdx];
+                }
             }
             for (int lag = 0; lag < ORDER+1; lag++) {
                 phi[lag] = autocorrelate(orderedInBuf, FRAMELEN, lag);
             }
             if (phi[0] != 0) {
                 double G = sqrt(levinson_durbin());
-                for (int n = 0; n < FRAMELEN; n++) {
-                    double ex = (*noise)[exPtr];
-                    exCntPtr++;
-                    exPtr++;
-                    if (exCntPtr >= static_cast<int>(exPercentage*EXLEN)) {
-                        exCntPtr = 0;
-                        exPtr = exStart;
+                if (sidechain == nullptr) {
+                    for (int n = 0; n < FRAMELEN; n++) {
+                        double ex = (*noise)[exPtr];
+                        exCntPtr++;
+                        exPtr++;
+                        if (exCntPtr >= static_cast<int>(exPercentage*EXLEN)) {
+                            exCntPtr = 0;
+                            exPtr = exStart;
+                        }
+                        if (exPtr >= EXLEN) {
+                            exPtr = 0;
+                        }
+                        double out_n = G*ex;
+                        for (int k = 0; k < ORDER; k++) {
+                            int idx = (histPtr+k)%ORDER;
+                            out_n -= alphas[k+1]*out_hist[ch][idx];
+                        }
+                        histPtr--;
+                        if (histPtr < 0) {
+                            histPtr += ORDER;
+                        }
+                        out_hist[ch][histPtr] = out_n;
+                        unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
+                        double preOlaVal = outBuf[ch][wtIdx];
+                        // Change of frame length can cause OLA to add with unwanted audio
+                        // in a correct scenario, OLA with 50% overlap will always be adding with 0s in
+                        // the last HOPSIZE-many samples, so just set the last HOPSIZE-many outputs to
+                        // be equal to out_n
+                        if (n < HOPSIZE) {
+                            outBuf[ch][wtIdx] += out_n;
+                        }
+                        else {
+                            outBuf[ch][wtIdx] = out_n;
+                        }
                     }
-                    if (exPtr >= EXLEN) {
-                        exPtr = 0;
-                    }
-                    double out_n = G*ex;
-                    for (int k = 0; k < ORDER; k++) {
-                        int idx = (histPtr+k)%ORDER;
-                        out_n -= alphas[k+1]*out_hist[ch][idx];
-                    }
-                    histPtr--;
-                    if (histPtr < 0) {
-                        histPtr += ORDER;
-                    }
-                    out_hist[ch][histPtr] = out_n;
-                    unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
-                    double preOlaVal = outBuf[ch][wtIdx];
-                    // Change of frame length can cause OLA to add with unwanted audio
-                    // in a correct scenario, OLA with 50% overlap will always be adding with 0s in
-                    // the last HOPSIZE-many samples, so just set the last HOPSIZE-many outputs to
-                    // be equal to out_n
-                    if (n < HOPSIZE) {
-                        outBuf[ch][wtIdx] += out_n;
-                    }
-                    else {
-                        outBuf[ch][wtIdx] = out_n;
+                }
+                else {
+                    for (int n = 0; n < FRAMELEN; n++) {
+                        double ex = orderedScBuf[n];
+                        double out_n = G*ex;
+                        for (int k = 0; k < ORDER; k++) {
+                            int idx = (histPtr+k)%ORDER;
+                            out_n -= alphas[k+1]*out_hist[ch][idx];
+                        }
+                        histPtr--;
+                        if (histPtr < 0) {
+                            histPtr += ORDER;
+                        }
+                        out_hist[ch][histPtr] = out_n;
+                        unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
+                        double preOlaVal = outBuf[ch][wtIdx];
+                        if (n < HOPSIZE) {
+                            outBuf[ch][wtIdx] += out_n;
+                        }
+                        else {
+                            outBuf[ch][wtIdx] = out_n;
+                        }
                     }
                 }
                 for (int i = 0; i < out_hist[ch].size(); i++) {
