@@ -14,7 +14,6 @@ But what if the input is not restricted to voice, but can also be drums, or synt
 
 LP Morph applies real-time LPC to input audio, and allows control of the following parameters:
 
- ![1744420131593.png](./1744420131593.png)
 
 1. Mix: controls the dry/wet percentage of LPC effect.
 2. Order: the number of coefficients used to characterise the input. Higher order means greater resolution.
@@ -23,6 +22,5 @@ LP Morph applies real-time LPC to input audio, and allows control of the followi
 5. Dropdown menu: features a variety of excitation signals, including white noise, ring tone, kid screaming, train, and more. All sounds are produced or recorded by myself.
 6. Length: controls the length of excitation signal that's actually being used in output synthesis. When the length is small, you will hear a strong pitch component in the output, because the same excitation samples are being looped in a small period.
 7. Start: determines the position (in fraction) of excitation to start processing.
-8. Sidechain: if on, excitation signal will come from sidechain instead of the dropdown
 
 For a more straightforward explanation, see the demo linked on top.
