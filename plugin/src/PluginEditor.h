@@ -30,7 +30,9 @@ public:
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
     void buttonClicked(juce::Button *b) override;
     void timerCallback() override;
+    
 private:
+    void initialiseSlider(juce::Slider& slider, juce::Label& label, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, juce::AudioProcessorValueTreeState& vts, const juce::String& parameterID, const juce::String& labelText);
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     VoicemorphAudioProcessor& audioProcessor;
@@ -59,8 +61,10 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frameDurAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> useSidechainAttachment;
     
-    juce::Colour readingsColour = juce::Colour(0x1000281); //juce::Colours::black;
-    juce::Colour bgColour = juce::Colour(0xffdddddd);
+    juce::Colour readingsColour = juce::Colour(0xffe03c31);
+    juce::Colour highlightColour = juce::Colour(0xff53565A);
+    juce::Colour bgColour = juce::Colour(0xffbbbcbc);
+    juce::Colour fillColour = juce::Colour(0xff78BE20);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };
