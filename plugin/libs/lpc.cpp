@@ -1,4 +1,5 @@
 #include "lpc.h"
+#include "../src/AudioLogger.h"
 
 LPC::LPC(int numChannels) {
     double maxFrameDurS = MAX_FRAME_DUR/1000.0;
@@ -199,6 +200,11 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
             }
             if (phi[0] != 0) {
                 double G = sqrt(levinson_durbin());
+                
+                // Log alphas after levinson_durbin
+                if (audioLogger) {
+                    audioLogger->logAlphas(alphas.data(), ORDER);
+                }
                 if (sidechain == nullptr) {
                     for (int n = 0; n < FRAMELEN; n++) {
                         double ex = (*noise)[exPtr];

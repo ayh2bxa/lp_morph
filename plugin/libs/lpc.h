@@ -5,6 +5,8 @@
 #include <JuceHeader.h>
 #include "../src/ParameterHelper.h"
 
+class AudioLogger;
+
 using namespace std;
 
 class LPC {
@@ -39,6 +41,7 @@ private:
     vector<int> exCntPtrs;
     vector<int> histPtrs;
     int totalNumChannels;
+    AudioLogger* audioLogger = nullptr;
 public:
     LPC(int numChannels);
     bool start = false;
@@ -47,6 +50,8 @@ public:
     int get_exlen() {return EXLEN;}
     int get_max_exlen() {return MAX_EXLEN;}
     int getCurrentExPtr(int channel = 0) const { return channel < exPtrs.size() ? exPtrs[channel] : 0; }
+    const std::vector<double>& getAlphas() const { return alphas; }
+    void setAudioLogger(AudioLogger* logger) { audioLogger = logger; }
     const std::vector<double>* noise = nullptr;
     int FRAMELEN;
     int prevFrameLen;

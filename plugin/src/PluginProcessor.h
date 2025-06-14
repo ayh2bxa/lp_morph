@@ -12,6 +12,7 @@
 #include "lpc.h"
 #include "agc.h"
 #include "ParameterHelper.h"
+#include "AudioLogger.h"
 #include <cmath>
 
 //==============================================================================
@@ -69,6 +70,12 @@ public:
     void setCustomExcitation(int index);
     void loadCustomExcitations(const juce::File& selectedFile);
     
+    // Audio logging methods
+    void enableAudioLogging(bool enable) { audioLogger.enableLogging(enable); }
+    bool isAudioLoggingEnabled() const { return audioLogger.isLoggingEnabled(); }
+    void writeAudioLogToFile(const std::string& filePath) { audioLogger.writeLogToFile(filePath); }
+    void clearAudioLog() { audioLogger.clearLog(); }
+    
     vector<vector<double>> factoryExcitations;
     
     std::atomic<bool> hasAudioWarning{false};
@@ -93,6 +100,8 @@ private:
     bool usingCustomExcitation = false;
     int currentCustomExcitationIndex = -1;
     void updateLpcParams();
+    
+    AudioLogger audioLogger;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessor)
 };
