@@ -16,62 +16,15 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     setOpaque (true);
     startTimerHz(30);
     
-    lpcSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    lpcSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    addAndMakeVisible(lpcSlider);
-    lpcLabel.setText("Mix", juce::dontSendNotification);
-    lpcLabel.attachToComponent(&lpcSlider, false);
-//    lpcLabel.setColour (juce::Label::textColourId, readingsColour);
-    addAndMakeVisible(lpcLabel);
-    lpcMixAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpcMix", lpcSlider));
-    
-    exLenSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    exLenSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    addAndMakeVisible(exLenSlider);
-    exLenLabel.setText("Length", juce::dontSendNotification);
-    exLenLabel.attachToComponent(&exLenSlider, false);
-//    exLenLabel.setColour (juce::Label::textColourId, readingsColour);
-    addAndMakeVisible(exLenLabel);
-    exLenAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "exLen", exLenSlider));
-
-    exStartSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    exStartSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    addAndMakeVisible(exStartSlider);
-    exStartLabel.setText("Start", juce::dontSendNotification);
-    exStartLabel.attachToComponent(&exStartSlider, false);
-//    exStartLabel.setColour (juce::Label::textColourId, readingsColour);
-    addAndMakeVisible(exStartLabel);
-    exStartAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "exStartPos", exStartSlider));
-    
-    orderSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    orderSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    addAndMakeVisible(orderSlider);
-    orderLabel.setText("Order", juce::dontSendNotification);
-    orderLabel.attachToComponent(&orderSlider, false);
-//    orderLabel.setColour (juce::Label::textColourId, readingsColour);
-    addAndMakeVisible(orderLabel);
-    orderAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "lpcOrder", orderSlider));
-    
-    wetGainSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    wetGainSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    addAndMakeVisible(wetGainSlider);
-    wetGainLabel.setText("Wet gain (dB)", juce::dontSendNotification);
-    wetGainLabel.attachToComponent(&wetGainSlider, false);
-//    wetGainLabel.setColour (juce::Label::textColourId, readingsColour);
-    addAndMakeVisible(wetGainLabel);
-    wetGainAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "wetGain", wetGainSlider));
-    
-    frameDurSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    frameDurSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
-    addAndMakeVisible(frameDurSlider);
-    frameDurLabel.setText("Frame Duration (ms)", juce::dontSendNotification);
-    frameDurLabel.attachToComponent(&frameDurSlider, false);
-//    frameDurLabel.setColour (juce::Label::textColourId, readingsColour);
-    addAndMakeVisible(frameDurLabel);
-    frameDurAttachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment (vts, "frameDur", frameDurSlider));
+    initialiseSlider(lpcSlider, lpcLabel, lpcMixAttachment, vts, "lpcMix", "Mix");
+    initialiseSlider(exLenSlider, exLenLabel, exLenAttachment, vts, "exLen", "Length");
+    initialiseSlider(exStartSlider, exStartLabel, exStartAttachment, vts, "exStartPos", "Start");
+    initialiseSlider(orderSlider, orderLabel, orderAttachment, vts, "lpcOrder", "Order");
+    initialiseSlider(wetGainSlider, wetGainLabel, wetGainAttachment, vts, "wetGain", "Wet gain (dB)");
+    initialiseSlider(frameDurSlider, frameDurLabel, frameDurAttachment, vts, "frameDur", "Frame Duration (ms)");
     
     sidechainButton.setButtonText ("Sidechain");
-//    sidechainButton.setColour (juce::Label::textColourId, readingsColour);
+    sidechainButton.setColour (juce::Label::textColourId, readingsColour);
     addAndMakeVisible(sidechainButton);
     sidechainButton.setVisible(!JUCEApplication::isStandaloneApp());
     sidechainButton.addListener(this);
@@ -86,17 +39,25 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     excitationDropdown.addItem("TrainScreech1", 5);
     excitationDropdown.addItem("TrainScreech2", 6);
     excitationDropdown.addItem("WhiteNoise", 7);
-//    excitationDropdown.setColour (juce::Label::textColourId, bgColour);
+    excitationDropdown.setColour(juce::ComboBox::backgroundColourId, juce::Colours::black);
+    excitationDropdown.setColour(juce::ComboBox::textColourId, bgColour);
+    getLookAndFeel().setColour(juce::PopupMenu::backgroundColourId, juce::Colours::black);
+    getLookAndFeel().setColour(juce::PopupMenu::textColourId, bgColour);
+    getLookAndFeel().setColour(juce::PopupMenu::highlightedBackgroundColourId, highlightColour);
+    getLookAndFeel().setColour(juce::PopupMenu::highlightedTextColourId, bgColour);
     addAndMakeVisible(excitationDropdown);
     excitationDropdown.addListener(this);
     int exType = vts.getParameterAsValue("exType").getValue();
     excitationDropdown.setSelectedId(1+exType, juce::dontSendNotification);
     
     contactButton.setButtonText("Contact Author :-)))");
+    contactButton.setColour(juce::TextButton::buttonColourId, juce::Colours::black);
+    contactButton.setColour(juce::TextButton::textColourOffId, bgColour);
+    contactButton.setColour(juce::TextButton::textColourOnId, bgColour);
     contactButton.addListener(this);
     addAndMakeVisible(contactButton);
     
-    setSize (600, 600);
+    setSize (1000, 800);
     setResizable(true, true);
 }
 
@@ -109,8 +70,8 @@ VoicemorphAudioProcessorEditor::~VoicemorphAudioProcessorEditor()
 void VoicemorphAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-//    g.fillAll (bgColour);
+//    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillAll (bgColour);
     g.setColour (juce::Colours::white);
     auto inputLineColour = juce::Colours::white;
     auto estimatedFilterLineColour = juce::Colours::red;
@@ -155,4 +116,20 @@ void VoicemorphAudioProcessorEditor::buttonClicked(juce::Button* b)
 
 void VoicemorphAudioProcessorEditor::timerCallback() {
     
+}
+
+void VoicemorphAudioProcessorEditor::initialiseSlider(juce::Slider& slider, juce::Label& label, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, juce::AudioProcessorValueTreeState& vts, const juce::String& parameterID, const juce::String& labelText)
+{
+    slider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 25);
+    slider.setColour(juce::Slider::textBoxTextColourId, readingsColour);
+    slider.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+    slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::black);
+    slider.setColour(juce::Slider::thumbColourId, highlightColour);
+    addAndMakeVisible(slider);
+    label.setText(labelText, juce::dontSendNotification);
+    label.attachToComponent(&slider, false);
+    label.setColour(juce::Label::textColourId, readingsColour);
+    addAndMakeVisible(label);
+    attachment.reset(new juce::AudioProcessorValueTreeState::SliderAttachment(vts, parameterID, slider));
 }
