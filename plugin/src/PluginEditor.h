@@ -10,6 +10,8 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "../libs/sampler.h"
+#include "ColorScheme.h"
 #include <cmath>
 
 //==============================================================================
@@ -33,6 +35,7 @@ public:
     
 private:
     void initialiseSlider(juce::Slider& slider, juce::Label& label, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, juce::AudioProcessorValueTreeState& vts, const juce::String& parameterID, const juce::String& labelText);
+    void updateWaveformDisplay();
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     VoicemorphAudioProcessor& audioProcessor;
@@ -52,6 +55,7 @@ private:
     Label frameDurLabel;
     juce::TextButton contactButton;
     juce::ToggleButton sidechainButton;
+    WaveformViewer waveformViewer;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> wetGainAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> lpcMixAttachment;
@@ -61,10 +65,8 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frameDurAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> useSidechainAttachment;
     
-    juce::Colour readingsColour = juce::Colour(0xffe03c31);
-    juce::Colour highlightColour = juce::Colour(0xff53565A);
-    juce::Colour bgColour = juce::Colour(0xffbbbcbc);
-    juce::Colour fillColour = juce::Colour(0xff78BE20);
+    bool showWarningIndicator;
+    juce::Time lastWarningTime;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };

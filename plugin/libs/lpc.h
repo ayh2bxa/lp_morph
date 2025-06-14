@@ -46,6 +46,7 @@ public:
     void set_exlen(int val) {EXLEN = val;}
     int get_exlen() {return EXLEN;}
     int get_max_exlen() {return MAX_EXLEN;}
+    int getCurrentExPtr(int channel = 0) const { return channel < exPtrs.size() ? exPtrs[channel] : 0; }
     const std::vector<double>* noise = nullptr;
     int FRAMELEN;
     int prevFrameLen;

@@ -125,8 +125,9 @@ void LPC::prepareToPlay() {
 }
 
 bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain) {
+    bool audioWarning = false;
     if (noise == nullptr) {
-        return;
+        return audioWarning;
     }
     inWtPtr = inWtPtrs[ch];
     inRdPtr = inRdPtrs[ch];
@@ -149,7 +150,6 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     exCntPtr = exCntPtrs[ch];
     histPtr = histPtrs[ch];
     double slope = (currentGain-previousGain)/numSamples;
-    bool audioWarning = false;
     for (int s = 0; s < numSamples; s++) {
         inBuf[ch][inWtPtr] = (double)input[s];
         if (sidechain != nullptr) {
@@ -275,6 +275,7 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     outWtPtrs[ch] = outWtPtr;
     outRdPtrs[ch] = outRdPtr;
     exPtrs[ch] = exPtr;
+    exCntPtrs[ch] = exCntPtr;
     histPtrs[ch] = histPtr;
     return audioWarning;
 }
