@@ -153,16 +153,23 @@ void VoicemorphAudioProcessor::updateLpcParams() {
     int prevExType = lpc.exType;
     lpc.exType = static_cast<int>((*lpcExTypeParameter).load());
     
-    if (usingCustomExcitation && currentCustomExcitationIndex >= 0 && currentCustomExcitationIndex < customExcitations.size()) {
-        lpc.noise = &customExcitations[currentCustomExcitationIndex];
-        lpc.EXLEN = (*lpc.noise).size();
-    } else if (lpc.exType == 7) {
-        lpc.noise = nullptr;
-        lpc.EXLEN = 0;
-    } else if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
+//    if (usingCustomExcitation && currentCustomExcitationIndex >= 0 && currentCustomExcitationIndex < customExcitations.size()) {
+//        lpc.noise = &customExcitations[currentCustomExcitationIndex];
+//        lpc.EXLEN = (*lpc.noise).size();
+//    } else if (lpc.exType == customExcitations.size()) {
+//        lpc.noise = nullptr;
+//        lpc.EXLEN = 0;
+//    } else if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
+//        lpc.noise = &factoryExcitations[lpc.exType];
+//        lpc.EXLEN = (*lpc.noise).size();
+//    } else {
+//        lpc.noise = nullptr;
+//        lpc.EXLEN = 0;
+//    }
+    if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
         lpc.noise = &factoryExcitations[lpc.exType];
         lpc.EXLEN = (*lpc.noise).size();
-    } else {
+    } else if (lpc.exType == factoryExcitations.size()) {
         lpc.noise = nullptr;
         lpc.EXLEN = 0;
     }
@@ -233,7 +240,6 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     int numChannels = totalNumOutputChannels;
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-    
     updateLpcParams();
     currentGain = (*gainParameter).load();
     currentGain = juce::Decibels::decibelsToGain(currentGain);
@@ -252,14 +258,20 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             auto *channelDataR = inputBuffer.getReadPointer(ch);
             auto *channelDataW = inputBuffer.getWritePointer(ch);
             sidechainData = sidechainBuffer.getReadPointer(ch);
-            lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
+            bool warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
+            if (warning) {
+                hasAudioWarning.store(true);
+            }
         }
     }
     else {
         for (int ch = 0; ch < numChannels; ch++) {
             auto *channelDataR = buffer.getReadPointer(ch);
             auto *channelDataW = buffer.getWritePointer(ch);
-            lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+            bool warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+            if (warning) {
+                hasAudioWarning.store(true);
+            }
         }
     }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {

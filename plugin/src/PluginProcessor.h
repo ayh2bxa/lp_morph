@@ -68,12 +68,16 @@ public:
     vector<juce::File> getCustomExcitationFiles() const;
     void setCustomExcitation(int index);
     void loadCustomExcitations(const juce::File& selectedFile);
+    
+    vector<vector<double>> factoryExcitations;
+    
+    std::atomic<bool> hasAudioWarning{false};
+    
 private:
     float previousGain = 0;
     float currentGain = 0;
     void loadFactoryExcitations();
     juce::File writeBinaryDataToTempFile(const void* data, int size, const juce::String& fileName);
-    vector<vector<double>> factoryExcitations;
     vector<vector<double>> customExcitations;
     vector<juce::File> customExcitationFiles;
     bool isUsingCustomExcitation() const;
