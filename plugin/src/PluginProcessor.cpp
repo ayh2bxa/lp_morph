@@ -36,7 +36,7 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     frameDurParameter = apvts.getRawParameterValue ("frameDur");
     useSidechainParameter = apvts.getRawParameterValue ("useSidechain");
     isStandalone = wrapperType == wrapperType_Standalone;
-    enableAudioLogging(true);
+    enableAudioLogging(false);
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()

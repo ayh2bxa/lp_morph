@@ -83,12 +83,12 @@ void VoicemorphAudioProcessorEditor::paint (juce::Graphics& g)
     auto inputLineColour = juce::Colours::white;
     auto estimatedFilterLineColour = juce::Colours::red;
     
-    if (showWarningIndicator) {
-        g.setColour(ColorScheme::readingsColour);
-        g.setFont(juce::Font(24.0f, juce::Font::bold));
-        juce::Rectangle<int> warningRect(getWidth() - 40, 10, 30, 30);
-        g.drawText("!", warningRect, juce::Justification::centred);
-    }
+//    if (showWarningIndicator) {
+//        g.setColour(ColorScheme::readingsColour);
+//        g.setFont(juce::Font(24.0f, juce::Font::bold));
+//        juce::Rectangle<int> warningRect(getWidth() - 40, 10, 30, 30);
+//        g.drawText("!", warningRect, juce::Justification::centred);
+//    }
     
 }
 

@@ -3,3 +3,4 @@ Builds/
 *.icns
 cmaketemplate
 build
+signing.txt
