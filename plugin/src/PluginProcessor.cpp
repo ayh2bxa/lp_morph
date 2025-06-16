@@ -36,7 +36,7 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     frameDurParameter = apvts.getRawParameterValue ("frameDur");
     useSidechainParameter = apvts.getRawParameterValue ("useSidechain");
     isStandalone = wrapperType == wrapperType_Standalone;
-    enableAudioLogging(false);
+    enableAudioLogging(true);
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
@@ -261,9 +261,10 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             auto *channelDataW = inputBuffer.getWritePointer(ch);
             sidechainData = sidechainBuffer.getReadPointer(ch);
             audioLogger.logInputBuffer(channelDataR, buffer.getNumSamples());
-            bool warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
-            if (warning) {
+            LPCWarning warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
+            if (warning != LPCWarning::None) {
                 hasAudioWarning.store(true);
+                currentWarningType.store(static_cast<int>(warning));
             }
             audioLogger.logOutputBuffer(channelDataW, buffer.getNumSamples());
         }
@@ -273,9 +274,10 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             auto *channelDataR = buffer.getReadPointer(ch);
             auto *channelDataW = buffer.getWritePointer(ch);
             audioLogger.logInputBuffer(channelDataR, buffer.getNumSamples());
-            bool warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
-            if (warning) {
+            LPCWarning warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+            if (warning != LPCWarning::None) {
                 hasAudioWarning.store(true);
+                currentWarningType.store(static_cast<int>(warning));
             }
             audioLogger.logOutputBuffer(channelDataW, buffer.getNumSamples());
         }

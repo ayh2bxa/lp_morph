@@ -125,10 +125,10 @@ void LPC::prepareToPlay() {
     }
 }
 
-bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain) {
-    bool audioWarning = false;
+LPCWarning LPC::applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain) {
+    LPCWarning warningType = LPCWarning::None;
     if (noise == nullptr) {
-        return audioWarning;
+        return warningType;
     }
     inWtPtr = inWtPtrs[ch];
     inRdPtr = inRdPtrs[ch];
@@ -169,11 +169,11 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
         double gainFactor = previousGain+slope*(double)s;
         float final_out = lpcMix*gainFactor*out+(1-lpcMix)*in;
         if (isnan(final_out)) {
-            audioWarning = true;
+            warningType = LPCWarning::NaN;
             final_out = 0.f;
         }
         else if (fabsf(final_out) > 1.f) {
-            audioWarning = true;
+            warningType = LPCWarning::Clipping;
             final_out /= (2.f*fabsf(final_out));
         }
         output[s] = final_out;
@@ -199,11 +199,13 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                 phi[lag] = autocorrelate(orderedInBuf, FRAMELEN, lag);
             }
             if (phi[0] != 0) {
-                double G = sqrt(levinson_durbin());
+                double err = levinson_durbin();
+                double G = sqrt(err);
                 
                 // Log alphas after levinson_durbin
                 if (audioLogger) {
                     audioLogger->logAlphas(alphas.data(), ORDER);
+                    audioLogger->logG(G, err);
                 }
                 if (sidechain == nullptr) {
                     for (int n = 0; n < FRAMELEN; n++) {
@@ -283,7 +285,7 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
     exPtrs[ch] = exPtr;
     exCntPtrs[ch] = exCntPtr;
     histPtrs[ch] = histPtr;
-    return audioWarning;
+    return warningType;
 }
 
 void LPC::reset_a() {

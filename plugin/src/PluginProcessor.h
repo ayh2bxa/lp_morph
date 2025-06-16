@@ -79,6 +79,7 @@ public:
     vector<vector<double>> factoryExcitations;
     
     std::atomic<bool> hasAudioWarning{false};
+    std::atomic<int> currentWarningType{0}; // 0=None, 1=NaN, 2=Clipping
     
 private:
     float previousGain = 0;

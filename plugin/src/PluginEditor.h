@@ -67,6 +67,7 @@ private:
     
     bool showWarningIndicator;
     juce::Time lastWarningTime;
+    int currentWarningType; // 0=None, 1=NaN, 2=Clipping
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessorEditor)
 };

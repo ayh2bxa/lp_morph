@@ -9,6 +9,12 @@ class AudioLogger;
 
 using namespace std;
 
+enum class LPCWarning {
+    None = 0,
+    NaN = 1,
+    Clipping = 2
+};
+
 class LPC {
 private:
     vector<double> phi;
@@ -45,7 +51,7 @@ private:
 public:
     LPC(int numChannels);
     bool start = false;
-    bool applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain);
+    LPCWarning applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain);
     void set_exlen(int val) {EXLEN = val;}
     int get_exlen() {return EXLEN;}
     int get_max_exlen() {return MAX_EXLEN;}

@@ -82,9 +82,9 @@ void AudioLogger::logInputBuffer(const float* inputBuffer, int bufferSize) noexc
     currentEntry->timestamp = juce::Time::getHighResolutionTicks();
     
     // Copy input buffer
-    for (int i = 0; i < bufferSize; ++i) {
-        currentEntry->inputBuffer[i] = inputBuffer[i];
-    }
+//    for (int i = 0; i < bufferSize; ++i) {
+//        currentEntry->inputBuffer[i] = inputBuffer[i];
+//    }
 }
 
 void AudioLogger::logAlphas(const double* alphas, int order) noexcept
@@ -101,15 +101,25 @@ void AudioLogger::logAlphas(const double* alphas, int order) noexcept
     }
 }
 
+void AudioLogger::logG(double G, double E) noexcept
+{
+    if (!loggingEnabled.load() || !currentEntry)
+        return;
+    
+    // Start building new log entry
+    currentEntry->G = G;
+    currentEntry->E = E;
+}
+
 void AudioLogger::logOutputBuffer(const float* outputBuffer, int bufferSize) noexcept
 {
     if (!loggingEnabled.load() || !currentEntry || bufferSize > MAX_BUFFER_SIZE)
         return;
     
-    // Copy output buffer
-    for (int i = 0; i < bufferSize; ++i) {
-        currentEntry->outputBuffer[i] = outputBuffer[i];
-    }
+//    // Copy output buffer
+//    for (int i = 0; i < bufferSize; ++i) {
+//        currentEntry->outputBuffer[i] = outputBuffer[i];
+//    }
     
     // Mark entry as complete and finalize
     finalizeLogEntry();
@@ -128,6 +138,12 @@ void AudioLogger::finalizeLogEntry() noexcept
     logReady.store(true);
     
     currentEntry = nullptr;
+    
+    // Signal background thread to write (real-time safe)
+    if (autoWriteTimer && !autoWriteTimer->isTimerRunning())
+    {
+        autoWriteTimer->startTimer(1); // Trigger immediate write on background thread
+    }
 }
 
 void AudioLogger::writeLogToFile(const std::string& filePath)
@@ -142,7 +158,7 @@ void AudioLogger::writeLogToFile(const std::string& filePath)
     }
     
     // Write CSV header
-    file << "timestamp,bufferSize,alphas_count,";
+    file << "timestamp,bufferSize,G,E,";
     
 //    // Input buffer columns
 //    for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
@@ -154,61 +170,38 @@ void AudioLogger::writeLogToFile(const std::string& filePath)
 //        file << "output_" << i << ",";
 //    }
     
-//    // Alphas columns
-//    for (int i = 0; i < MAX_LPC_ORDER; ++i) {
-//        file << "alpha_" << i;
-//        if (i < MAX_LPC_ORDER - 1) file << ",";
-//    }
+    // Alphas columns
+    for (int i = 0; i < MAX_LPC_ORDER; ++i) {
+        file << "alpha_" << i;
+        if (i < MAX_LPC_ORDER - 1) file << ",";
+    }
     file << "\n";
     
-    // Read all available entries from FIFO
-    int readIndex = fifoReadIndex.load();
-    int writeIndex = fifoWriteIndex.load();
-    
-    while (readIndex != writeIndex) {
-        const LogEntry& entry = logFifo[readIndex];
+    // Write all entries currently in the FIFO (entire circular buffer contents)
+    for (int i = 0; i < MAX_FIFO_SIZE; ++i) {
+        const LogEntry& entry = logFifo[i];
         
         // Only write complete entries
         if (entry.isComplete) {
             file << entry.timestamp << "," 
                  << entry.inputBufferSize << ","
-                 << entry.alphasCount << ",";
-            
-//            // Write input buffer
-//            for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
-//                if (i < entry.inputBufferSize) {
-//                    file << entry.inputBuffer[i];
-//                } else {
-//                    file << "0";
-//                }
-//                file << ",";
-//            }
-//            
-//            // Write output buffer
-//            for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
-//                if (i < entry.outputBufferSize) {
-//                    file << entry.outputBuffer[i];
-//                } else {
-//                    file << "0";
-//                }
-//                file << ",";
-//            }
+                 << entry.G << ","
+                 << entry.E << ",";
             
             // Write alphas
             for (int i = 0; i < MAX_LPC_ORDER; ++i) {
                 if (i < entry.alphasCount) {
                     file << entry.alphas[i];
+                } else {
+                    file << "0";
                 }
-                if (i < entry.alphasCount - 1) file << ",";
+                if (i < MAX_LPC_ORDER - 1) file << ",";
             }
             file << "\n";
         }
-        
-        readIndex = (readIndex + 1) % MAX_FIFO_SIZE;
     }
     
-    // Update read index to mark all entries as consumed
-    fifoReadIndex.store(writeIndex);
+    // Don't update read index - we want to keep data in FIFO for next write
     
     file.close();
     std::cout << "Audio log written to: " << filePath << std::endl;
@@ -218,11 +211,8 @@ void AudioLogger::enableLogging(bool enable) noexcept
 {
     loggingEnabled.store(enable);
     
-    if (enable && autoWriteTimer)
-    {
-        autoWriteTimer->startTimer(autoWriteIntervalMs);
-    }
-    else if (autoWriteTimer)
+    // No automatic timer - we write immediately on each new entry
+    if (autoWriteTimer && autoWriteTimer->isTimerRunning())
     {
         autoWriteTimer->stopTimer();
     }
@@ -230,9 +220,8 @@ void AudioLogger::enableLogging(bool enable) noexcept
 
 std::string AudioLogger::generateLogFilename() const
 {
-    auto now = juce::Time::getCurrentTime();
-    auto timeString = now.formatted("%Y%m%d_%H%M%S").toStdString();
-    return logDirectory + "/audio_log_" + timeString + ".csv";
+    // Always use the same filename - it will be overwritten each time
+    return logDirectory + "/audio_log.csv";
 }
 
 void AudioLogger::autoWriteCallback()
@@ -241,6 +230,10 @@ void AudioLogger::autoWriteCallback()
     {
         std::string filename = generateLogFilename();
         writeLogToFile(filename);
+        
+        // Stop timer after writing - will restart when next entry is ready
+        if (autoWriteTimer)
+            autoWriteTimer->stopTimer();
     }
 }
 

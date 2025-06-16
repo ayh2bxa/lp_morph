@@ -13,6 +13,7 @@ public:
     void logInputBuffer(const float* inputBuffer, int bufferSize) noexcept;
     void logAlphas(const double* alphas, int order) noexcept;
     void logOutputBuffer(const float* outputBuffer, int bufferSize) noexcept;
+    void logG(double G, double E) noexcept;
     
     void enableLogging(bool enable) noexcept;
     bool isLoggingEnabled() const noexcept { return loggingEnabled.load(); }
@@ -22,12 +23,11 @@ public:
     void clearLog() noexcept;
     
     // Automatic periodic writing
-    void setAutoWriteInterval(int intervalMs) { autoWriteIntervalMs = intervalMs; }
     void setLogDirectory(const std::string& directory) { logDirectory = directory; }
     void autoWriteCallback();
     
 private:
-    static constexpr int MAX_FIFO_SIZE = 1024;
+    static constexpr int MAX_FIFO_SIZE = 4096;
     static constexpr int MAX_BUFFER_SIZE = 4096;
     static constexpr int MAX_LPC_ORDER = 100;
     
@@ -39,6 +39,8 @@ private:
         int alphasCount;
         juce::uint64 timestamp;
         bool isComplete;
+        double G;
+        double E;
     };
     
     void finalizeLogEntry() noexcept;
@@ -55,7 +57,6 @@ private:
     
     // Auto-write functionality
     std::unique_ptr<juce::Timer> autoWriteTimer;
-    int autoWriteIntervalMs{5000}; // Default 5 seconds
     std::string logDirectory;
     std::string generateLogFilename() const;
 };

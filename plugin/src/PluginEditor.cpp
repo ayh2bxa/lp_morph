@@ -83,12 +83,21 @@ void VoicemorphAudioProcessorEditor::paint (juce::Graphics& g)
     auto inputLineColour = juce::Colours::white;
     auto estimatedFilterLineColour = juce::Colours::red;
     
-//    if (showWarningIndicator) {
-//        g.setColour(ColorScheme::readingsColour);
-//        g.setFont(juce::Font(24.0f, juce::Font::bold));
-//        juce::Rectangle<int> warningRect(getWidth() - 40, 10, 30, 30);
-//        g.drawText("!", warningRect, juce::Justification::centred);
-//    }
+    if (showWarningIndicator) {
+        g.setColour(ColorScheme::readingsColour);
+        g.setFont(juce::Font(24.0f, juce::Font::bold));
+        juce::Rectangle<int> warningRect(getWidth() - 40, 10, 30, 30);
+        
+        // Display different symbols for different warning types
+        juce::String warningSymbol;
+        if (currentWarningType == 1) { // NaN warning
+            warningSymbol = "O";
+        } else if (currentWarningType == 2) { // Clipping warning
+            warningSymbol = "!";
+        }
+        
+        g.drawText(warningSymbol, warningRect, juce::Justification::centred);
+    }
     
 }
 
@@ -147,6 +156,7 @@ void VoicemorphAudioProcessorEditor::timerCallback() {
     
     bool hasWarning = audioProcessor.hasAudioWarning.load();
     if (hasWarning) {
+        currentWarningType = audioProcessor.currentWarningType.load();
         if (!showWarningIndicator) {
             showWarningIndicator = true;
             repaint();
