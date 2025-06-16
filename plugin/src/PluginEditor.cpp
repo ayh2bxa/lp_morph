@@ -166,7 +166,7 @@ void VoicemorphAudioProcessorEditor::timerCallback() {
     } else {
         if (showWarningIndicator) {
             juce::Time currentTime = juce::Time::getCurrentTime();
-            if ((currentTime - lastWarningTime).inMilliseconds() >= 2000) {
+            if ((currentTime - lastWarningTime).inMilliseconds() >= 100) {
                 showWarningIndicator = false;
                 repaint();
             }

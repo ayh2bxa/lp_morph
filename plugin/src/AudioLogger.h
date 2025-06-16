@@ -10,7 +10,7 @@ public:
     ~AudioLogger();
     
     // Sequential logging methods - real-time safe
-    void logInputBuffer(const float* inputBuffer, int bufferSize) noexcept;
+    void logInputBuffer(const float* inputBuffer, int bufferSize, int channel) noexcept;
     void logAlphas(const double* alphas, int order) noexcept;
     void logOutputBuffer(const float* outputBuffer, int bufferSize) noexcept;
     void logG(double G, double E) noexcept;
@@ -41,6 +41,7 @@ private:
         bool isComplete;
         double G;
         double E;
+        int channel;
     };
     
     void finalizeLogEntry() noexcept;

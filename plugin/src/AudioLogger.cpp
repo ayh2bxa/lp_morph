@@ -62,7 +62,7 @@ AudioLogger::~AudioLogger()
     }
 }
 
-void AudioLogger::logInputBuffer(const float* inputBuffer, int bufferSize) noexcept
+void AudioLogger::logInputBuffer(const float* inputBuffer, int bufferSize, int channel) noexcept
 {
     if (!loggingEnabled.load() || bufferSize > MAX_BUFFER_SIZE)
         return;
@@ -80,6 +80,7 @@ void AudioLogger::logInputBuffer(const float* inputBuffer, int bufferSize) noexc
     currentEntry->isComplete = false;
     currentEntry->inputBufferSize = bufferSize;
     currentEntry->timestamp = juce::Time::getHighResolutionTicks();
+    currentEntry->channel = channel;
     
     // Copy input buffer
 //    for (int i = 0; i < bufferSize; ++i) {
@@ -158,7 +159,7 @@ void AudioLogger::writeLogToFile(const std::string& filePath)
     }
     
     // Write CSV header
-    file << "timestamp,bufferSize,G,E,";
+    file << "timestamp,channel,bufferSize,G,E,";
     
 //    // Input buffer columns
 //    for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
@@ -184,6 +185,7 @@ void AudioLogger::writeLogToFile(const std::string& filePath)
         // Only write complete entries
         if (entry.isComplete) {
             file << entry.timestamp << "," 
+                 << entry.channel << ","
                  << entry.inputBufferSize << ","
                  << entry.G << ","
                  << entry.E << ",";
