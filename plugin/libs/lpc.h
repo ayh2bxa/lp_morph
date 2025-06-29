@@ -27,35 +27,26 @@ private:
     int histPtr;
     int exCntPtr;
     size_t inRdPtr;
-    vector<vector<double>> inBuf;
-    vector<vector<double>> scBuf;
+    vector<double> inBuf;
+    vector<double> scBuf;
     vector<double> orderedInBuf;
     vector<double> orderedScBuf;
-    vector<vector<double>> outBuf;
+    vector<double> outBuf;
     
     double levinson_durbin();
     double autocorrelate(const vector<double>& x, int frameSize, int lag);
     void reset_a();
-    vector<vector<double>> out_hist;
+    vector<double> out_hist;
     
-    vector<int> inWtPtrs;
-    vector<size_t> inRdPtrs;
-    vector<int> smpCnts;
-    vector<int> outWtPtrs;
-    vector<int> outRdPtrs;
-    vector<int> exPtrs;
-    vector<int> exCntPtrs;
-    vector<int> histPtrs;
-    int totalNumChannels;
     AudioLogger* audioLogger = nullptr;
 public:
-    LPC(int numChannels);
+    LPC();
     bool start = false;
-    LPCWarning applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, int ch, float exStartPos, const float *sidechain, float previousGain, float currentGain);
+    LPCWarning applyLPC(const float *input, float *output, int numSamples, float lpcMix, float exPercentage, float exStartPos, const float *sidechain, float previousGain, float currentGain);
     void set_exlen(int val) {EXLEN = val;}
     int get_exlen() {return EXLEN;}
     int get_max_exlen() {return MAX_EXLEN;}
-    int getCurrentExPtr(int channel = 0) const { return channel < exPtrs.size() ? exPtrs[channel] : 0; }
+    int getCurrentExPtr() const { return exPtr; }
     const std::vector<double>& getAlphas() const { return alphas; }
     void setAudioLogger(AudioLogger* logger) { audioLogger = logger; }
     const std::vector<double>* noise = nullptr;

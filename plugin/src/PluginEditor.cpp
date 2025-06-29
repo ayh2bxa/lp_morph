@@ -146,7 +146,7 @@ void VoicemorphAudioProcessorEditor::timerCallback() {
         if (selectedExcitation >= 0 && selectedExcitation < static_cast<int>(audioProcessor.factoryExcitations.size()))
         {
             float exStart = audioProcessor.apvts.getParameterAsValue("exStartPos").getValue();
-            int currentExPtr = audioProcessor.lpc.getCurrentExPtr(0);
+            int currentExPtr = audioProcessor.lpc.getCurrentExPtr();
             
             float startPosInSamples = exStart * audioProcessor.factoryExcitations[selectedExcitation].size();
             
@@ -199,7 +199,7 @@ void VoicemorphAudioProcessorEditor::updateWaveformDisplay()
         waveformViewer.setWaveform(&audioProcessor.factoryExcitations[selectedExcitation]);
         
         float exStart = audioProcessor.apvts.getParameterAsValue("exStartPos").getValue();
-        int currentExPtr = audioProcessor.lpc.getCurrentExPtr(0);
+        int currentExPtr = audioProcessor.lpc.getCurrentExPtr();
         float startPosInSamples = exStart * audioProcessor.factoryExcitations[selectedExcitation].size();
         
         waveformViewer.setPlayheadPosition(startPosInSamples, static_cast<float>(currentExPtr));

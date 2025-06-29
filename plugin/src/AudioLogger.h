@@ -14,6 +14,7 @@ public:
     void logAlphas(const double* alphas, int order) noexcept;
     void logOutputBuffer(const float* outputBuffer, int bufferSize) noexcept;
     void logG(double G, double E) noexcept;
+    void logPhis(const double* phis, int order) noexcept;
     
     void enableLogging(bool enable) noexcept;
     bool isLoggingEnabled() const noexcept { return loggingEnabled.load(); }
@@ -34,7 +35,8 @@ private:
     struct LogEntry {
         std::array<float, MAX_BUFFER_SIZE> inputBuffer;
         std::array<float, MAX_BUFFER_SIZE> outputBuffer;
-        std::array<double, MAX_LPC_ORDER> alphas;
+        std::array<double, MAX_LPC_ORDER+1> alphas;
+        std::array<double, MAX_LPC_ORDER+1> phis;
         int inputBufferSize;
         int alphasCount;
         juce::uint64 timestamp;

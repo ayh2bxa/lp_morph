@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <limits>
 
 class AutoWriteTimer : public juce::Timer
 {
@@ -94,11 +95,25 @@ void AudioLogger::logAlphas(const double* alphas, int order) noexcept
         return;
     
     // Start building new log entry
-    currentEntry->alphasCount = order;
+    currentEntry->alphasCount = order+1;
     
     // Copy alphas
     for (int i = 0; i < order; ++i) {
         currentEntry->alphas[i] = alphas[i];
+    }
+}
+
+void AudioLogger::logPhis(const double* phis, int order) noexcept
+{
+    if (!loggingEnabled.load() || !currentEntry || order > MAX_LPC_ORDER)
+        return;
+    
+    // Start building new log entry
+    currentEntry->alphasCount = order;
+    
+    // Copy alphas
+    for (int i = 0; i < MAX_LPC_ORDER+1; ++i) {
+        currentEntry->phis[i] = phis[i];
     }
 }
 
@@ -158,6 +173,9 @@ void AudioLogger::writeLogToFile(const std::string& filePath)
         return;
     }
     
+    // Set maximum precision for floating point numbers
+    file << std::setprecision(std::numeric_limits<double>::max_digits10);
+    
     // Write CSV header
     file << "timestamp,channel,bufferSize,G,E,";
     
@@ -172,9 +190,9 @@ void AudioLogger::writeLogToFile(const std::string& filePath)
 //    }
     
     // Alphas columns
-    for (int i = 0; i < MAX_LPC_ORDER; ++i) {
-        file << "alpha_" << i;
-        if (i < MAX_LPC_ORDER - 1) file << ",";
+    for (int i = 0; i < MAX_LPC_ORDER+1; ++i) {
+        file << "phi_" << i;
+        if (i < MAX_LPC_ORDER) file << ",";
     }
     file << "\n";
     
@@ -191,13 +209,9 @@ void AudioLogger::writeLogToFile(const std::string& filePath)
                  << entry.E << ",";
             
             // Write alphas
-            for (int i = 0; i < MAX_LPC_ORDER; ++i) {
-                if (i < entry.alphasCount) {
-                    file << entry.alphas[i];
-                } else {
-                    file << "0";
-                }
-                if (i < MAX_LPC_ORDER - 1) file << ",";
+            for (int j = 0; j < MAX_LPC_ORDER+1; j++) {
+                file << entry.phis[j];
+                if (j < MAX_LPC_ORDER) file << ",";
             }
             file << "\n";
         }

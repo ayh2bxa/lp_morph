@@ -23,7 +23,7 @@ VoicemorphAudioProcessor::VoicemorphAudioProcessor()
                      .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                    #endif
                      ),
-lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::ParameterHelper::createParameterLayout())
+apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::ParameterHelper::createParameterLayout())
 #endif
 {
     loadFactoryExcitations();
@@ -36,7 +36,9 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     frameDurParameter = apvts.getRawParameterValue ("frameDur");
     useSidechainParameter = apvts.getRawParameterValue ("useSidechain");
     isStandalone = wrapperType == wrapperType_Standalone;
-    enableAudioLogging(true);
+    enableAudioLogging(false);
+    monoInputBuffer.resize(8192);
+    monoOutputBuffer.resize(8192);
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
@@ -200,6 +202,8 @@ void VoicemorphAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     updateLpcParams();
     lpc.prepareToPlay();
     lpc.setAudioLogger(&audioLogger);
+    dbgLogFlag = !dbgLogFlag;
+    enableAudioLogging(dbgLogFlag);
 }
 
 void VoicemorphAudioProcessor::releaseResources()
@@ -270,17 +274,36 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 //        }
 //    }
 //    else {
-    for (int ch = 0; ch < numChannels; ch++) {
-        auto *channelDataR = buffer.getReadPointer(ch);
-        auto *channelDataW = buffer.getWritePointer(ch);
-        audioLogger.logInputBuffer(channelDataR, buffer.getNumSamples(), ch);
-        LPCWarning warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
-        if (warning != LPCWarning::None) {
-            hasAudioWarning.store(true);
-            currentWarningType.store(static_cast<int>(warning));
+    
+    // Merge input channels to mono (real-time safe)
+    for (int s = 0; s < buffer.getNumSamples(); ++s) {
+        float sum = 0.0f;
+        for (int ch = 0; ch < numChannels; ++ch) {
+            sum += buffer.getSample(ch, s);
         }
-        audioLogger.logOutputBuffer(channelDataW, buffer.getNumSamples());
+        monoInputBuffer[s] = sum / static_cast<float>(numChannels);
     }
+    
+    // Log mono input
+    audioLogger.logInputBuffer(monoInputBuffer.data(), buffer.getNumSamples(), 0);
+    
+    // Process mono through LPC
+    LPCWarning warning = lpc.applyLPC(monoInputBuffer.data(), monoOutputBuffer.data(), buffer.getNumSamples(), 
+                                     (*lpcMixParameter).load(), (*exLenParameter).load(), 
+                                     (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+    
+    if (warning != LPCWarning::None) {
+        hasAudioWarning.store(true);
+        currentWarningType.store(static_cast<int>(warning));
+    }
+    
+    // Copy mono output to all channels
+    for (int ch = 0; ch < numChannels; ++ch) {
+        buffer.copyFrom(ch, 0, monoOutputBuffer.data(), buffer.getNumSamples());
+    }
+    
+    // Log mono output
+    audioLogger.logOutputBuffer(monoOutputBuffer.data(), buffer.getNumSamples());
 //    }
     if (!juce::approximatelyEqual(currentGain, previousGain)) {
         previousGain = currentGain;

@@ -101,8 +101,13 @@ private:
     bool usingCustomExcitation = false;
     int currentCustomExcitationIndex = -1;
     void updateLpcParams();
+    bool dbgLogFlag = false;
     
     AudioLogger audioLogger;
+    
+    // Pre-allocated mono buffers for real-time safety
+    std::vector<float> monoInputBuffer;
+    std::vector<float> monoOutputBuffer;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessor)
 };
