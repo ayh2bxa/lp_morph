@@ -14,7 +14,7 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setOpaque (true);
-    startTimerHz(60);
+    startTimerHz(30);
     
     initialiseSlider(lpcSlider, lpcLabel, lpcMixAttachment, vts, "lpcMix", "Mix");
     initialiseSlider(exLenSlider, exLenLabel, exLenAttachment, vts, "exLen", "Length");

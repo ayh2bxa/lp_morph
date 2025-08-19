@@ -2,8 +2,8 @@
 
 #include <JuceHeader.h>
 
-#define MAX_ORDER 64
-#define MAX_FRAME_DUR 30
+#define MAX_ORDER 50
+#define MAX_FRAME_DUR 10
 
 using namespace juce;
 
@@ -22,8 +22,8 @@ namespace Utility
                 std::make_unique<AudioParameterFloat>(juce::ParameterID("exLen", 1), "Excitation Length", NormalisableRange<float>{0.0001f, 1.f, 0.0001f, 0.3f}, 1.f),
                 std::make_unique<AudioParameterFloat>(juce::ParameterID("exStartPos", 1), "Excitation Start Position", NormalisableRange<float>{0.0f, 1.f, 0.01f}, 0.f),
                 std::make_unique<AudioParameterInt>(juce::ParameterID("exType", 1), "Excitation Type", 0, 7, 6),
-                std::make_unique<AudioParameterInt>(juce::ParameterID("lpcOrder", 1), "LPC Order", 1, MAX_ORDER, 32),
-                std::make_unique<AudioParameterFloat>(juce::ParameterID("frameDur", 1), "Frame Duration (ms)", NormalisableRange<float>{0.1f, (float)MAX_FRAME_DUR, 0.01f}, 20.f),
+                std::make_unique<AudioParameterInt>(juce::ParameterID("lpcOrder", 1), "LPC Order", 1, MAX_ORDER, MAX_ORDER/2),
+                std::make_unique<AudioParameterFloat>(juce::ParameterID("frameDur", 1), "Frame Duration (ms)", NormalisableRange<float>{0.1f, (float)MAX_FRAME_DUR, 0.01f}, 10.f),
                 std::make_unique<AudioParameterBool>(juce::ParameterID("useSidechain", 1), "Use Sidechain as Excitation", false)
             };
         }
