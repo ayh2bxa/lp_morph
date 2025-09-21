@@ -13,18 +13,31 @@
 VoicemorphAudioProcessor::VoicemorphAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
     : AudioProcessor (BusesProperties()
-                   #if ! JucePlugin_IsMidiEffect
-                    #if ! JucePlugin_IsSynth
-                     .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                     #if ! JucePlugin_IsStandalone
-                      .withInput ("Sidechain", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                    #endif
-                     .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                   #endif
-                     ),
-lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::ParameterHelper::createParameterLayout())
-#endif
+   #if ! JucePlugin_IsMidiEffect
+      .withInput  ("Input",  juce::AudioChannelSet::discreteChannels (4), true)
+      .withOutput ("Output", juce::AudioChannelSet::discreteChannels (4), true)
+//    // --- Standalone: 4-in / 4-out (master 1/2, cue 3/4) ---
+//    #if JucePlugin_IsStandalone
+//        .withInput  ("Input",  juce::AudioChannelSet::discreteChannels (4), true)
+//        .withOutput ("Output", juce::AudioChannelSet::discreteChannels (4), true)
+//
+//    // --- In hosts: normal stereo (keep your sidechain for non-standalone) ---
+//    #else
+//      #if ! JucePlugin_IsSynth
+//        .withInput  ("Input", juce::AudioChannelSet::stereo(), true)
+//      #endif
+//      #if ! JucePlugin_IsStandalone
+//        .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), true)
+//      #endif
+//        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+//    #endif // JucePlugin_IsStandalone
+
+   #endif // !JucePlugin_IsMidiEffect
+    )
+#endif // JucePlugin_PreferredChannelConfigurations
+    , lpc(2)
+    , apvts(*this, nullptr, juce::Identifier("Parameters"),
+            Utility::ParameterHelper::createParameterLayout())
 {
     loadFactoryExcitations();
     exLenParameter = apvts.getRawParameterValue ("exLen");
@@ -36,6 +49,63 @@ lpc(2), apvts(*this, nullptr, juce::Identifier ("Parameters"), Utility::Paramete
     frameDurParameter = apvts.getRawParameterValue ("frameDur");
     useSidechainParameter = apvts.getRawParameterValue ("useSidechain");
     isStandalone = wrapperType == wrapperType_Standalone;
+    initMidi();
+    
+}
+
+void VoicemorphAudioProcessor::initMidi()
+{
+    for (auto* p : getParameters())
+        if (auto* withID = dynamic_cast<juce::AudioProcessorParameterWithID*>(p))
+        {
+            midiTarget.emplace(withID->paramID, std::numeric_limits<float>::quiet_NaN());
+            lastSent[withID->paramID]   = std::numeric_limits<float>::quiet_NaN();
+            inGesture[withID->paramID]  = false;
+            lastTouch[withID->paramID]  = 0.0;
+        }
+
+    midiMap = {
+        { 1,  4,  "lpcMix", },
+        { 2,  4,  "exLen", },
+        {7, 5, "lpcOrder"},
+        {7, 31, "wetGain"},
+    };
+
+    // Drive host/UI updates ~60 Hz (message thread)
+    startTimerHz(60);
+    struct MidiLogger : juce::MidiInputCallback
+    {
+        void handleIncomingMidiMessage(juce::MidiInput*, const juce::MidiMessage& m) override
+        {
+            if (m.isController())
+                DBG("CC  ch=" << (int)m.getChannel()
+                    << " num=" << (int)m.getControllerNumber()
+                    << " value=" << (int)m.getControllerValue());
+
+            else if (m.isNoteOnOrOff())
+                DBG(juce::String(m.isNoteOn() ? "NoteOn " : "NoteOff ")
+                    << "ch=" << (int)m.getChannel()
+                    << " note=" << (int)m.getNoteNumber()
+                    << " vel=" << (int)m.getVelocity());
+            else if (m.isPitchWheel())
+                DBG("PitchWheel ch=" << (int)m.getChannel()
+                    << " value=" << m.getPitchWheelValue());
+            // …handle other message types as needed
+        }
+    };
+
+    std::unique_ptr<juce::MidiInput> input;
+    MidiLogger logger;
+    auto devices = juce::MidiInput::getAvailableDevices();
+    for (auto& d : devices)
+        DBG("MIDI in: " << d.name);
+    // pick the FLX4 entry (by name match or UI selection)
+    auto it = std::find_if(devices.begin(), devices.end(),
+                           [](auto& dev){ return dev.name.containsIgnoreCase("DDJ-FLX4"); });
+    if (it != devices.end())
+        input = juce::MidiInput::openDevice(it->identifier, &logger);
+
+    if (input) input->start(); // now twist a knob / press a button and watch the DBG()
 }
 
 VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
@@ -80,6 +150,10 @@ void VoicemorphAudioProcessor::loadFactoryExcitations() {
     
     auto whiteNoiseAudio = loadEmbeddedWavToBuffer(BinaryData::WhiteNoise_wav_bin, BinaryData::WhiteNoise_wav_binSize, true);
     factoryExcitations.push_back(whiteNoiseAudio);
+    
+    factoryExcitations.push_back(loadEmbeddedWavToBuffer(BinaryData::GreenNoise_wav_bin, BinaryData::GreenNoise_wav_binSize, true));
+    
+    factoryExcitations.push_back(loadEmbeddedWavToBuffer(BinaryData::Shake_wav_bin, BinaryData::Shake_wav_binSize, true));
 
     lpc.noise = &factoryExcitations[6];
     lpc.EXLEN = lpc.noise->size();
@@ -152,20 +226,6 @@ void VoicemorphAudioProcessor::updateLpcParams() {
     float exStartPos = (*lpcExStartParameter).load();
     int prevExType = lpc.exType;
     lpc.exType = static_cast<int>((*lpcExTypeParameter).load());
-    
-//    if (usingCustomExcitation && currentCustomExcitationIndex >= 0 && currentCustomExcitationIndex < customExcitations.size()) {
-//        lpc.noise = &customExcitations[currentCustomExcitationIndex];
-//        lpc.EXLEN = (*lpc.noise).size();
-//    } else if (lpc.exType == customExcitations.size()) {
-//        lpc.noise = nullptr;
-//        lpc.EXLEN = 0;
-//    } else if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
-//        lpc.noise = &factoryExcitations[lpc.exType];
-//        lpc.EXLEN = (*lpc.noise).size();
-//    } else {
-//        lpc.noise = nullptr;
-//        lpc.EXLEN = 0;
-//    }
     if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
         lpc.noise = &factoryExcitations[lpc.exType];
         lpc.EXLEN = (*lpc.noise).size();
@@ -198,6 +258,7 @@ void VoicemorphAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     previousGain = juce::Decibels::decibelsToGain(previousGain);
     updateLpcParams();
     lpc.prepareToPlay();
+    initMidi();
 }
 
 void VoicemorphAudioProcessor::releaseResources()
@@ -209,35 +270,90 @@ void VoicemorphAudioProcessor::releaseResources()
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool VoicemorphAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
-
-    return true;
-  #endif
+    auto in  = layouts.getMainInputChannelSet();
+    auto out = layouts.getMainOutputChannelSet();
+    const bool ok2 = false;
+    const bool ok4 = (in == juce::AudioChannelSet::discreteChannels (4)
+                   && out == juce::AudioChannelSet::discreteChannels (4));
+    return ok2 || ok4;               // allow 2ch fallback if device can’t do 4ch
+//    #if JucePlugin_IsStandalone
+//        auto in  = layouts.getMainInputChannelSet();
+//        auto out = layouts.getMainOutputChannelSet();
+//        const bool ok2 = (in == juce::AudioChannelSet::stereo()
+//                       && out == juce::AudioChannelSet::stereo());
+//        const bool ok4 = (in == juce::AudioChannelSet::discreteChannels (4)
+//                       && out == juce::AudioChannelSet::discreteChannels (4));
+//        return ok2 || ok4;               // allow 2ch fallback if device can’t do 4ch
+//    #else
+//        return layouts.getMainInputChannelSet()  == juce::AudioChannelSet::stereo()
+//            && layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
+//    #endif
 }
 #endif
 
+void VoicemorphAudioProcessor::timerCallback()
+{
+    const double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
+    const double idleToEnd = 0.12; // end gesture after 120 ms without new MIDI
+    const float  eps = 1e-5f;
+
+    for (auto& kv : midiTarget)
+    {
+        const auto& id  = kv.first;
+        const float tgt = kv.second.load(std::memory_order_relaxed);
+        if (std::isnan(tgt)) continue;
+
+        // New value?
+        if (std::isnan(lastSent[id]) || std::abs(tgt - lastSent[id]) > eps)
+        {
+            if (auto* p = apvts.getParameter(id))
+            {
+                if (!inGesture[id]) { p->beginChangeGesture(); inGesture[id] = true; }
+                p->setValueNotifyingHost(tgt); // normalized 0..1
+            }
+            lastSent[id]  = tgt;
+            lastTouch[id] = now;
+        }
+
+        // End gesture after a short idle
+        if (inGesture[id] && (now - lastTouch[id]) > idleToEnd)
+        {
+            if (auto* p = apvts.getParameter(id)) p->endChangeGesture();
+            inGesture[id] = false;
+        }
+    }
+}
+
 void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    for (const auto meta : midiMessages)
+    {
+        const auto& m = meta.getMessage();
+        if (!m.isController()) continue;
+
+        const int ch = m.getChannel();
+        const int cc = m.getControllerNumber();
+        const int v  = m.getControllerValue(); // 0..127
+        DBG("ch: " << ch << ", cc: " << cc << "v: " << v);
+        for (const auto& map : midiMap)
+            if (map.ch == ch && map.cc == cc)
+                midiTarget[map.paramID].store(v / 127.0f, std::memory_order_relaxed); // RT-safe store
+    }
+    
+    AudioBuffer<float> inBuf  = getBusBuffer (buffer, /*isInput*/  true,  0); // 4ch
+    AudioBuffer<float> outBuf = getBusBuffer (buffer, /*isInput*/  false, 0); // 4ch
+    const int N = buffer.getNumSamples();
+    if (outBuf.getNumChannels() >= 4 && inBuf.getNumChannels() >= 4)
+    {
+        outBuf.copyFrom (2, 0, inBuf, 2, 0, N);
+        outBuf.copyFrom (3, 0, inBuf, 3, 0, N);
+    }
+//    DBG("inCh=" << inBuf.getNumChannels() << " outCh=" << outBuf.getNumChannels());
+
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
-    int numChannels = totalNumOutputChannels;
+    int numChannels = 2;
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     updateLpcParams();
@@ -248,7 +364,7 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         const float *sidechainData = nullptr;
         auto* scBus = getBus(true, 1);
         AudioBuffer<float> sidechainBuffer;
-        AudioBuffer<float> inputBuffer = getBusBuffer(buffer, true, 0);;
+        AudioBuffer<float> inputBuffer = getBusBuffer(buffer, true, 0);
         if (scBus != nullptr && scBus->isEnabled()) {
             sidechainBuffer = getBusBuffer (buffer, true, 1);
             auto outputBuffer = getBusBuffer (buffer, false, 0);
@@ -266,8 +382,8 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     }
     else {
         for (int ch = 0; ch < numChannels; ch++) {
-            auto *channelDataR = buffer.getReadPointer(ch);
-            auto *channelDataW = buffer.getWritePointer(ch);
+            auto *channelDataR = inBuf.getReadPointer(ch);
+            auto *channelDataW = outBuf.getWritePointer(ch);
             bool warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
             if (warning) {
                 hasAudioWarning.store(true);

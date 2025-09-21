@@ -14,15 +14,17 @@ from scipy import signal
 #     return audio * gain
 def processaudio(name):
     audio, fs = sf.read(name)
-    sf.write(name, audio*2, fs)
+    # audio = 0.5*(audio/np.max(np.abs(audio)))
+    sf.write(name, audio, fs)
     with wave.open(name, "rb") as wav_file:
         raw_data = wav_file.readframes(wav_file.getnframes())
     with open(name+'.bin', "wb") as bin_file:
         bin_file.write(raw_data)
-processaudio('BassyTrainNoise.wav')
-processaudio('CherubScreams.wav')
-processaudio('MicScratch.wav')
-processaudio('Ring.wav')
-processaudio('TrainScreech1.wav')
-processaudio('TrainScreech2.wav')
+# processaudio('BassyTrainNoise.wav')
+# processaudio('CherubScreams.wav')
+# processaudio('MicScratch.wav')
+# processaudio('Ring.wav')
+# processaudio('TrainScreech1.wav')
+# processaudio('TrainScreech2.wav')
 processaudio('WhiteNoise.wav')
+# processaudio('Shake.wav')

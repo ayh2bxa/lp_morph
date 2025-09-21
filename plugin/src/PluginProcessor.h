@@ -21,7 +21,7 @@
 using namespace juce;
 using namespace std;
 
-class VoicemorphAudioProcessor  : public juce::AudioProcessor, public ValueTree::Listener
+class VoicemorphAudioProcessor  : public juce::AudioProcessor, public ValueTree::Listener, public juce::Timer
 {
 public:
     //==============================================================================
@@ -73,6 +73,9 @@ public:
     
     std::atomic<bool> hasAudioWarning{false};
     
+    // for midi flushing to gui
+    void timerCallback() override;
+    
 private:
     float previousGain = 0;
     float currentGain = 0;
@@ -93,6 +96,20 @@ private:
     bool usingCustomExcitation = false;
     int currentCustomExcitationIndex = -1;
     void updateLpcParams();
+    
+    // midi handling
+    // Map a (channel, CC) to an APVTS parameter ID
+    struct MidiMap { int ch; int cc; juce::String paramID; };
+    std::vector<MidiMap> midiMap;
+
+    // Per-parameter target written by the audio thread (normalized 0..1)
+    std::unordered_map<juce::String, std::atomic<float>> midiTarget;
+
+    // Message-thread copies for host/UI updates
+    std::unordered_map<juce::String, float>  lastSent;
+    std::unordered_map<juce::String, bool>   inGesture;
+    std::unordered_map<juce::String, double> lastTouch;
+    void initMidi();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VoicemorphAudioProcessor)
 };

@@ -13,6 +13,7 @@
 #include "../libs/sampler.h"
 #include "ColorScheme.h"
 #include <cmath>
+#include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 
 //==============================================================================
 /**
@@ -53,7 +54,7 @@ private:
     Label orderLabel;
     Slider frameDurSlider;
     Label frameDurLabel;
-    juce::TextButton contactButton;
+    juce::TextButton settingsButton;
     juce::ToggleButton sidechainButton;
     WaveformViewer waveformViewer;
     

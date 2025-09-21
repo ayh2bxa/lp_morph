@@ -39,7 +39,9 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     excitationDropdown.addItem("TrainScreech1", 5);
     excitationDropdown.addItem("TrainScreech2", 6);
     excitationDropdown.addItem("WhiteNoise", 7);
-    excitationDropdown.addItem("Off", 8);
+    excitationDropdown.addItem("GreenNoise", 8);
+    excitationDropdown.addItem("Shake", 9);
+    excitationDropdown.addItem("Off", 10);
     excitationDropdown.setColour(juce::ComboBox::backgroundColourId, juce::Colours::black);
     excitationDropdown.setColour(juce::ComboBox::textColourId, ColorScheme::bgColour);
     getLookAndFeel().setColour(juce::PopupMenu::backgroundColourId, juce::Colours::black);
@@ -51,12 +53,12 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     int exType = vts.getParameterAsValue("exType").getValue();
     excitationDropdown.setSelectedId(1+exType, juce::dontSendNotification);
     
-    contactButton.setButtonText("Contact Author :-)))");
-    contactButton.setColour(juce::TextButton::buttonColourId, juce::Colours::black);
-    contactButton.setColour(juce::TextButton::textColourOffId, ColorScheme::bgColour);
-    contactButton.setColour(juce::TextButton::textColourOnId, ColorScheme::bgColour);
-    contactButton.addListener(this);
-    addAndMakeVisible(contactButton);
+    settingsButton.setButtonText("Audio Settings");
+    settingsButton.setColour(juce::TextButton::buttonColourId, juce::Colours::black);
+    settingsButton.setColour(juce::TextButton::textColourOffId, ColorScheme::bgColour);
+    settingsButton.setColour(juce::TextButton::textColourOnId, ColorScheme::bgColour);
+    settingsButton.addListener(this);
+    addAndMakeVisible(settingsButton);
     
     addAndMakeVisible(waveformViewer);
     updateWaveformDisplay();
@@ -105,7 +107,7 @@ void VoicemorphAudioProcessorEditor::resized()
     waveformViewer.setBoundsRelative(0.04, 0.82, 0.6, 0.15);
     excitationDropdown.setBoundsRelative(0.68, 0.82, 0.28, 0.05);
 //    sidechainButton.setBoundsRelative(0.36, 0.9, 0.28, 0.05);
-    contactButton.setBoundsRelative(0.68, 0.92, 0.28, 0.05);
+    settingsButton.setBoundsRelative(0.68, 0.92, 0.28, 0.05);
 }
 
 void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
@@ -118,11 +120,40 @@ void VoicemorphAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxTha
 
 void VoicemorphAudioProcessorEditor::buttonClicked(juce::Button* b)
 {
-    if (b == &contactButton) {
-        juce::URL url ("https://linktr.ee/projectfmusic");
-        if (url.isWellFormed()) {
-            url.launchInDefaultBrowser();
-        }
+    if (b == &settingsButton) {
+//        juce::URL url ("https://linktr.ee/projectfmusic");
+//        if (url.isWellFormed()) {
+//            url.launchInDefaultBrowser();
+//        }
+        // Access the StandalonePluginHolder
+        StandalonePluginHolder* pluginHolder = juce::StandalonePluginHolder::getInstance();
+
+        // Get the AudioDeviceManager
+        auto& deviceManager = pluginHolder->deviceManager;
+
+        // Create the AudioDeviceSelectorComponent
+        auto* audioSettingsComp = new juce::AudioDeviceSelectorComponent(
+            deviceManager,
+            0, 4,  // Min/max input channels
+            0, 4,  // Min/max output channels
+            false,  // Show input channels
+            false,  // Show output channels
+            false,  // Show sample rate selector
+            false
+        );
+        audioSettingsComp->setSize(500, 550);
+        // Create a dialog window to display the settings
+        juce::DialogWindow::LaunchOptions options;
+        options.content.setOwned(audioSettingsComp); // Attach the settings component
+        options.dialogTitle = TRANS("Settings"); // Set dialog title
+        juce::Colour bgColour((uint8)0x05, (uint8)0x05, (uint8)0x05, (float)1.0f);
+        options.dialogBackgroundColour = bgColour;
+        options.escapeKeyTriggersCloseButton = true; // Close on escape key
+        options.useNativeTitleBar = true; // Use native title bar
+        options.resizable = false; // Non-resizable dialog
+
+        // Launch the dialog asynchronously
+        options.launchAsync();
     }
     else if (b == &sidechainButton) {
         exLenSlider.setVisible(!b->getToggleState());
