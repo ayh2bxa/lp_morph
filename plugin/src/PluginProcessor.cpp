@@ -35,7 +35,7 @@ VoicemorphAudioProcessor::VoicemorphAudioProcessor()
    #endif // !JucePlugin_IsMidiEffect
     )
 #endif // JucePlugin_PreferredChannelConfigurations
-    , lpc(2)
+    , lpcChannels(2)
     , apvts(*this, nullptr, juce::Identifier("Parameters"),
             Utility::ParameterHelper::createParameterLayout())
 {
@@ -112,51 +112,42 @@ VoicemorphAudioProcessor::~VoicemorphAudioProcessor()
 {
 }
 
-// Function to load a WAV file into a vector<double>
-std::vector<double> loadEmbeddedWavToBuffer(const void* data, size_t dataSize, bool dbg=false)
+// Function to load a stereo WAV file into a vector<vector<double>>
+std::vector<std::vector<double>> loadEmbeddedWavToBuffer(const void* data, size_t dataSize, bool dbg=false)
 {
     if (data != nullptr && dataSize > 0) {
-        size_t numSamples = dataSize / 2;
+        size_t numSamples = dataSize / 2; // total samples (L+R)
+        size_t samplesPerChannel = numSamples / 2; // stereo, so divide by 2
         const int16_t* sampleData = static_cast<const int16_t*>(data);
-        std::vector<double> samples;
-        samples.reserve(numSamples);
-        for (size_t i = 0; i < numSamples; ++i)
+
+        std::vector<std::vector<double>> stereoSamples(2);
+        stereoSamples[0].reserve(samplesPerChannel); // Left channel
+        stereoSamples[1].reserve(samplesPerChannel); // Right channel
+
+        for (size_t i = 0; i < numSamples; i += 2)
         {
-            samples.push_back(static_cast<double>(sampleData[i]) / 32768.0);
+            // Interleaved stereo: L, R, L, R, ...
+            stereoSamples[0].push_back(static_cast<double>(sampleData[i]) / 32768.0);     // Left
+            stereoSamples[1].push_back(static_cast<double>(sampleData[i+1]) / 32768.0);   // Right
         }
-        return samples;
+        return stereoSamples;
     }
     return {};
 }
 
 void VoicemorphAudioProcessor::loadFactoryExcitations() {
-    auto bassyTrainAudio = loadEmbeddedWavToBuffer(BinaryData::BassyTrainNoise_wav_bin, BinaryData::BassyTrainNoise_wav_binSize);
-    factoryExcitations.push_back(bassyTrainAudio);
-    
-    auto cherubScreamsAudio = loadEmbeddedWavToBuffer(BinaryData::CherubScreams_wav_bin, BinaryData::CherubScreams_wav_binSize);
-    factoryExcitations.push_back(cherubScreamsAudio);
-    
-    auto micScratchAudio = loadEmbeddedWavToBuffer(BinaryData::MicScratch_wav_bin, BinaryData::MicScratch_wav_binSize);
-    factoryExcitations.push_back(micScratchAudio);
-    
-    auto ringAudio = loadEmbeddedWavToBuffer(BinaryData::Ring_wav_bin, BinaryData::Ring_wav_binSize);
-    factoryExcitations.push_back(ringAudio);
-    
-    auto trainScreech1Audio = loadEmbeddedWavToBuffer(BinaryData::TrainScreech1_wav_bin, BinaryData::TrainScreech1_wav_binSize);
-    factoryExcitations.push_back(trainScreech1Audio);
-    
-    auto trainScreech2Audio = loadEmbeddedWavToBuffer(BinaryData::TrainScreech2_wav_bin, BinaryData::TrainScreech2_wav_binSize);
-    factoryExcitations.push_back(trainScreech2Audio);
-    
-    auto whiteNoiseAudio = loadEmbeddedWavToBuffer(BinaryData::WhiteNoise_wav_bin, BinaryData::WhiteNoise_wav_binSize, true);
-    factoryExcitations.push_back(whiteNoiseAudio);
-    
+    factoryExcitations.push_back(loadEmbeddedWavToBuffer(BinaryData::WhiteNoise_wav_bin, BinaryData::WhiteNoise_wav_binSize, true));
     factoryExcitations.push_back(loadEmbeddedWavToBuffer(BinaryData::GreenNoise_wav_bin, BinaryData::GreenNoise_wav_binSize, true));
-    
     factoryExcitations.push_back(loadEmbeddedWavToBuffer(BinaryData::Shake_wav_bin, BinaryData::Shake_wav_binSize, true));
+    factoryExcitations.push_back(loadEmbeddedWavToBuffer(BinaryData::StringScratch_wav_bin, BinaryData::StringScratch_wav_binSize, true));
 
-    lpc.noise = &factoryExcitations[6];
-    lpc.EXLEN = lpc.noise->size();
+    // Initialize LPC channels with appropriate noise channels (0 = WhiteNoise)
+    for (int ch = 0; ch < lpcChannels.size(); ++ch) {
+        int noiseIndex = 0; // WhiteNoise index
+        int channelIndex = ch % 2; // Use left/right channels cyclically
+        lpcChannels[ch].noise = &factoryExcitations[noiseIndex][channelIndex];
+        lpcChannels[ch].EXLEN = lpcChannels[ch].noise->size();
+    }
 }
 
 //==============================================================================
@@ -224,28 +215,33 @@ void VoicemorphAudioProcessor::changeProgramName (int index, const juce::String&
 void VoicemorphAudioProcessor::updateLpcParams() {
     float lpcMix = (*lpcMixParameter).load();
     float exStartPos = (*lpcExStartParameter).load();
-    int prevExType = lpc.exType;
-    lpc.exType = static_cast<int>((*lpcExTypeParameter).load());
-    if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
-        lpc.noise = &factoryExcitations[lpc.exType];
-        lpc.EXLEN = (*lpc.noise).size();
-    } else if (lpc.exType == factoryExcitations.size()) {
-        lpc.noise = nullptr;
-        lpc.EXLEN = 0;
-    }
-    
-    int prevOrder = lpc.ORDER;
-    lpc.ORDER = static_cast<int>((*lpcOrderParameter).load());
-    lpc.orderChanged = prevOrder != lpc.ORDER;
-    lpc.exTypeChanged = prevExType != lpc.exType;
-    lpc.exStartChanged = lpc.exStart != exStartPos;
-    lpc.prevFrameLen = lpc.FRAMELEN;
-    lpc.FRAMELEN = static_cast<int>((*frameDurParameter).load()*lpc.SAMPLERATE/1000.0);
-    if (lpc.prevFrameLen != lpc.FRAMELEN) {
-        for (int i = 0; i < lpc.FRAMELEN; i++) {
-            lpc.window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(lpc.FRAMELEN-1)));
+
+    for (int ch = 0; ch < lpcChannels.size(); ++ch) {
+        auto& lpc = lpcChannels[ch];
+        int prevExType = lpc.exType;
+        lpc.exType = static_cast<int>((*lpcExTypeParameter).load());
+        if (lpc.exType >= 0 && lpc.exType < factoryExcitations.size()) {
+            int channelIndex = ch % 2; // Use left/right channels cyclically
+            lpc.noise = &factoryExcitations[lpc.exType][channelIndex];
+            lpc.EXLEN = (*lpc.noise).size();
+        } else if (lpc.exType == factoryExcitations.size()) {
+            lpc.noise = nullptr;
+            lpc.EXLEN = 0;
         }
-        lpc.HOPSIZE = lpc.FRAMELEN/2;
+
+        int prevOrder = lpc.ORDER;
+        lpc.ORDER = static_cast<int>((*lpcOrderParameter).load());
+        lpc.orderChanged = prevOrder != lpc.ORDER;
+        lpc.exTypeChanged = prevExType != lpc.exType;
+        lpc.exStartChanged = lpc.exStart != exStartPos;
+        lpc.prevFrameLen = lpc.FRAMELEN;
+        lpc.FRAMELEN = static_cast<int>((*frameDurParameter).load()*lpc.SAMPLERATE/1000.0);
+        if (lpc.prevFrameLen != lpc.FRAMELEN) {
+            for (int i = 0; i < lpc.FRAMELEN; i++) {
+                lpc.window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(lpc.FRAMELEN-1)));
+            }
+            lpc.HOPSIZE = lpc.FRAMELEN/2;
+        }
     }
 }
 
@@ -257,7 +253,9 @@ void VoicemorphAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     previousGain = (*gainParameter).load();
     previousGain = juce::Decibels::decibelsToGain(previousGain);
     updateLpcParams();
-    lpc.prepareToPlay();
+    for (auto& lpc : lpcChannels) {
+        lpc.prepareToPlay();
+    }
     initMidi();
 }
 
@@ -374,7 +372,7 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             auto *channelDataR = inputBuffer.getReadPointer(ch);
             auto *channelDataW = inputBuffer.getWritePointer(ch);
             sidechainData = sidechainBuffer.getReadPointer(ch);
-            bool warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
+            bool warning = lpcChannels[ch].applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), (*lpcExStartParameter).load(), sidechainData, previousGain, currentGain);
             if (warning) {
                 hasAudioWarning.store(true);
             }
@@ -384,7 +382,7 @@ void VoicemorphAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         for (int ch = 0; ch < numChannels; ch++) {
             auto *channelDataR = inBuf.getReadPointer(ch);
             auto *channelDataW = outBuf.getWritePointer(ch);
-            bool warning = lpc.applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), ch, (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
+            bool warning = lpcChannels[ch].applyLPC(channelDataR, channelDataW, buffer.getNumSamples(), (*lpcMixParameter).load(), (*exLenParameter).load(), (*lpcExStartParameter).load(), nullptr, previousGain, currentGain);
             if (warning) {
                 hasAudioWarning.store(true);
             }
@@ -422,26 +420,29 @@ void VoicemorphAudioProcessor::setStateInformation (const void* data, int sizeIn
 
 //==============================================================================
 // This creates new instances of the plugin..
-std::vector<double> loadWavFile(const juce::File& file)
+std::vector<std::vector<double>> loadWavFile(const juce::File& file)
 {
     juce::AudioFormatManager formatManager;
     formatManager.registerBasicFormats();
-    
+
     std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
     if (reader != nullptr)
     {
+        const int numChannels = static_cast<int>(reader->numChannels);
         const int numSamples = static_cast<int>(reader->lengthInSamples);
-        juce::AudioBuffer<float> buffer(1, numSamples);
-        reader->read(&buffer, 0, numSamples, 0, true, false);
-        
-        std::vector<double> samples;
-        samples.reserve(numSamples);
-        const float* channelData = buffer.getReadPointer(0);
-        for (int i = 0; i < numSamples; ++i)
-        {
-            samples.push_back(static_cast<double>(channelData[i]));
+        juce::AudioBuffer<float> buffer(numChannels, numSamples);
+        reader->read(&buffer, 0, numSamples, 0, true, numChannels > 1);
+
+        std::vector<std::vector<double>> stereoSamples(numChannels);
+        for (int ch = 0; ch < numChannels; ++ch) {
+            stereoSamples[ch].reserve(numSamples);
+            const float* channelData = buffer.getReadPointer(ch);
+            for (int i = 0; i < numSamples; ++i)
+            {
+                stereoSamples[ch].push_back(static_cast<double>(channelData[i]));
+            }
         }
-        return samples;
+        return stereoSamples;
     }
     return {};
 }

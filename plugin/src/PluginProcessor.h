@@ -61,7 +61,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     
-    LPC lpc;
+    std::vector<LPC> lpcChannels;
     
     AudioProcessorValueTreeState apvts;
     void setUsingCustomExcitation(bool useCustom);
@@ -69,7 +69,7 @@ public:
     void setCustomExcitation(int index);
     void loadCustomExcitations(const juce::File& selectedFile);
     
-    vector<vector<double>> factoryExcitations;
+    vector<vector<vector<double>>> factoryExcitations;
     
     std::atomic<bool> hasAudioWarning{false};
     
@@ -81,7 +81,7 @@ private:
     float currentGain = 0;
     void loadFactoryExcitations();
     juce::File writeBinaryDataToTempFile(const void* data, int size, const juce::String& fileName);
-    vector<vector<double>> customExcitations;
+    vector<vector<vector<double>>> customExcitations;
     vector<juce::File> customExcitationFiles;
     bool isUsingCustomExcitation() const;
     std::atomic<float>* exLenParameter  = nullptr;

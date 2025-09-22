@@ -2,6 +2,14 @@
 
 #include <JuceHeader.h>
 
+const std::array<const char*, 11> excitationNames = {
+    "WhiteNoise",
+    "GreenNoise",
+    "Shake",
+    "StringScratch",
+    "Off"
+};
+
 namespace ColorScheme
 {
     const juce::Colour readingsColour = juce::Colour(0xffe03c31);

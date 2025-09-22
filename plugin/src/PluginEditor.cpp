@@ -32,16 +32,9 @@ VoicemorphAudioProcessorEditor::VoicemorphAudioProcessorEditor (VoicemorphAudioP
     exStartSlider.setVisible(!sidechainButton.getToggleState());
     useSidechainAttachment.reset (new juce::AudioProcessorValueTreeState::ButtonAttachment (vts, "useSidechain", sidechainButton));
     
-    excitationDropdown.addItem("BassyTrainNoise", 1);
-    excitationDropdown.addItem("CherubScreams", 2);
-    excitationDropdown.addItem("MicScratch", 3);
-    excitationDropdown.addItem("Ring", 4);
-    excitationDropdown.addItem("TrainScreech1", 5);
-    excitationDropdown.addItem("TrainScreech2", 6);
-    excitationDropdown.addItem("WhiteNoise", 7);
-    excitationDropdown.addItem("GreenNoise", 8);
-    excitationDropdown.addItem("Shake", 9);
-    excitationDropdown.addItem("Off", 10);
+    for (int i = 0; i < excitationNames.size(); ++i) {
+        excitationDropdown.addItem(excitationNames[i], i + 1);
+    }
     excitationDropdown.setColour(juce::ComboBox::backgroundColourId, juce::Colours::black);
     excitationDropdown.setColour(juce::ComboBox::textColourId, ColorScheme::bgColour);
     getLookAndFeel().setColour(juce::PopupMenu::backgroundColourId, juce::Colours::black);
@@ -168,9 +161,9 @@ void VoicemorphAudioProcessorEditor::timerCallback() {
         if (selectedExcitation >= 0 && selectedExcitation < static_cast<int>(audioProcessor.factoryExcitations.size()))
         {
             float exStart = audioProcessor.apvts.getParameterAsValue("exStartPos").getValue();
-            int currentExPtr = audioProcessor.lpc.getCurrentExPtr(0);
+            int currentExPtr = audioProcessor.lpcChannels[0].getCurrentExPtr();
             
-            float startPosInSamples = exStart * audioProcessor.factoryExcitations[selectedExcitation].size();
+            float startPosInSamples = exStart * audioProcessor.factoryExcitations[selectedExcitation][0].size();
             
             waveformViewer.setPlayheadPosition(startPosInSamples, static_cast<float>(currentExPtr));
         }
@@ -217,11 +210,11 @@ void VoicemorphAudioProcessorEditor::updateWaveformDisplay()
     
     if (selectedExcitation >= 0 && selectedExcitation < static_cast<int>(audioProcessor.factoryExcitations.size()))
     {
-        waveformViewer.setWaveform(&audioProcessor.factoryExcitations[selectedExcitation]);
-        
+        waveformViewer.setWaveform(&audioProcessor.factoryExcitations[selectedExcitation][0]);
+
         float exStart = audioProcessor.apvts.getParameterAsValue("exStartPos").getValue();
-        int currentExPtr = audioProcessor.lpc.getCurrentExPtr(0);
-        float startPosInSamples = exStart * audioProcessor.factoryExcitations[selectedExcitation].size();
+        int currentExPtr = audioProcessor.lpcChannels[0].getCurrentExPtr();
+        float startPosInSamples = exStart * audioProcessor.factoryExcitations[selectedExcitation][0].size();
         
         waveformViewer.setPlayheadPosition(startPosInSamples, static_cast<float>(currentExPtr));
     }
