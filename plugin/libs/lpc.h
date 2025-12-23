@@ -28,7 +28,10 @@ private:
     double levinson_durbin();
     double autocorrelate(const vector<double>& x, int frameSize, int lag);
     void reset_a();
+    double highPassFilter(double input, double cutoffHz);
     vector<double> out_hist;
+    double hpf_prev_input;
+    double hpf_prev_output;
 public:
     LPC();
     bool start = false;

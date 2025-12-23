@@ -34,6 +34,8 @@ LPC::LPC() {
     for (int i = 0; i < ORDER; i++) {
         out_hist[i] = 0.0;
     }
+    hpf_prev_input = 0.0;
+    hpf_prev_output = 0.0;
     for (int i = 0; i < FRAMELEN; i++) {
         window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(FRAMELEN-1)));
     }
@@ -166,6 +168,9 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                 int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
                 orderedInBuf[i] = window[i]*inBuf[inBufIdx];
             }
+            for (int i = 0; i < FRAMELEN; i++) {
+                orderedInBuf[i] = highPassFilter(orderedInBuf[i], 60.0);
+            }
             if (sidechain != nullptr) {
                 for (int i = 0; i < FRAMELEN; i++) {
                     int inBufIdx = (inWtPtr+i-FRAMELEN+BUFLEN)%BUFLEN;
@@ -255,4 +260,17 @@ void LPC::reset_a() {
     for (int i = 1; i < ORDER+1; i++) {
         alphas[i] = 0.0;
     }
+}
+
+double LPC::highPassFilter(double input, double cutoffHz) {
+    double dt = 1.0 / SAMPLERATE;
+    double rc = 1.0 / (2.0 * M_PI * cutoffHz);
+    double alpha = rc / (rc + dt);
+
+    double output = alpha * (hpf_prev_output + input - hpf_prev_input);
+
+    hpf_prev_input = input;
+    hpf_prev_output = output;
+
+    return output;
 }
