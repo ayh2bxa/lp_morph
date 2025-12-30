@@ -6,8 +6,8 @@ juce_add_plugin(LPMorph
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD TRUE
-    VST3_COPY_DIR "/Users/anthony/Library/Audio/Plug-Ins/VST3"
-    AU_COPY_DIR "/Users/anthony/Library/Audio/Plug-Ins/Components"
+    VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3"
+    AU_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/Components"
     MICROPHONE_PERMISSION_ENABLED TRUE
     PLUGIN_MANUFACTURER_CODE Manu
     PLUGIN_CODE Temp

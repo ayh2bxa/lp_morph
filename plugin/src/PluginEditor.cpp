@@ -104,7 +104,7 @@ void VoicemorphAudioProcessorEditor::resized()
     frameDurSlider.setBoundsRelative(0.68, 0.5, 0.28, 0.3);
     waveformViewer.setBoundsRelative(0.04, 0.82, 0.6, 0.15);
     excitationDropdown.setBoundsRelative(0.68, 0.82, 0.28, 0.05);
-//    sidechainButton.setBoundsRelative(0.36, 0.9, 0.28, 0.05);
+    sidechainButton.setBoundsRelative(0.68, 0.87, 0.28, 0.05);
     contactButton.setBoundsRelative(0.68, 0.92, 0.28, 0.05);
 }
 
