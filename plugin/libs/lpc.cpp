@@ -28,6 +28,7 @@ LPC::LPC(int numChannels) {
     }
     phi.resize(ORDER+1);
     alphas.resize(ORDER+1);
+    alphasPrev.resize(ORDER+1);
     reflectionCoeffs.resize(ORDER);
     orderedInBuf.resize(FRAMELEN);
     orderedScBuf.resize(FRAMELEN);
@@ -221,7 +222,7 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                         // Lattice filter synthesis
                         double f = G * ex;
                         for (int i = ORDER - 1; i >= 0; --i) {
-                            const double ki = -reflectionCoeffs[i];
+                            const double ki = reflectionCoeffs[i];
                             const double bPrev = out_hist[ch][i];      // ẽ^(i-1)[n-1] - backward delay state
 
                             // Equation 11.100b: e^(i-1)[n] = e^(i)[n] + k_i * ẽ^(i-1)[n-1]
@@ -253,7 +254,7 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                         // Lattice filter synthesis
                         double f = G * ex;
                         for (int i = ORDER - 1; i >= 0; --i) {
-                            const double ki = -reflectionCoeffs[i];
+                            const double ki = reflectionCoeffs[i];
                             const double bPrev = out_hist[ch][i];      // ẽ^(i-1)[n-1] - backward delay state
 
                             // Equation 11.100b: e^(i-1)[n] = e^(i)[n] + k_i * ẽ^(i-1)[n-1]
@@ -299,7 +300,9 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
 
 void LPC::reset_a() {
     alphas[0] = 1.0;
+    alphasPrev[0] = 1.0;
     for (int i = 1; i < ORDER+1; i++) {
         alphas[i] = 0.0;
+        alphasPrev[i] = 0.0;
     }
 }
