@@ -77,8 +77,14 @@ double LPC::levinson_durbin() {
         lbda = -lbda / E;
         reflectionCoeffs[k] = lbda;  // Store reflection coefficient
         // Clamp reflection coefficient for stability
-        if (reflectionCoeffs[k] >= 1.0) reflectionCoeffs[k] = 0.999;
-        if (reflectionCoeffs[k] <= -1.0) reflectionCoeffs[k] = -0.999;
+        if (reflectionCoeffs[k] >= 1.0) {
+            reflectionCoeffs[k] = 0.999;
+            std::cout<<"clamped"<<std::endl;
+        }
+        if (reflectionCoeffs[k] <= -1.0) {
+            reflectionCoeffs[k] = -0.999;
+            std::cout<<"clamped"<<std::endl;
+        }
         int half = (k + 1) / 2;
         for (int n = 0; n <= half; n++) {
             double tmp = alphas[k + 1 - n] + lbda * alphas[n];
@@ -220,7 +226,7 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                             exPtr = 0;
                         }
                         // Lattice filter synthesis
-                        double f = G * ex;
+                        double f = G*ex;
                         for (int i = ORDER - 1; i >= 0; --i) {
                             const double ki = reflectionCoeffs[i];
                             const double bPrev = out_hist[ch][i];      // ẽ^(i-1)[n-1] - backward delay state
@@ -252,7 +258,7 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                     for (int n = 0; n < FRAMELEN; n++) {
                         double ex = orderedScBuf[n];
                         // Lattice filter synthesis
-                        double f = G * ex;
+                        double f = G*ex;
                         for (int i = ORDER - 1; i >= 0; --i) {
                             const double ki = reflectionCoeffs[i];
                             const double bPrev = out_hist[ch][i];      // ẽ^(i-1)[n-1] - backward delay state
@@ -276,9 +282,9 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                         }
                     }
                 }
-                for (int i = 0; i < out_hist[ch].size(); i++) {
-                    out_hist[ch][i] = 0;
-                }
+//                for (int i = 0; i < out_hist[ch].size(); i++) {
+//                    out_hist[ch][i] = 0;
+//                }
                 histPtrs[ch] = 0;
             }
             outWtPtr += HOPSIZE;

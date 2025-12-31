@@ -181,6 +181,7 @@ void VoicemorphAudioProcessor::updateLpcParams() {
     lpc.exStartChanged = lpc.exStart != exStartPos;
     lpc.prevFrameLen = lpc.FRAMELEN;
     lpc.FRAMELEN = static_cast<int>((*frameDurParameter).load()*lpc.SAMPLERATE/1000.0);
+    lpc.FRAMELEN = 1024;
     if (lpc.prevFrameLen != lpc.FRAMELEN) {
         for (int i = 0; i < lpc.FRAMELEN; i++) {
             lpc.window[i] = 0.5*(1.0-cos(2.0*M_PI*i/(double)(lpc.FRAMELEN-1)));
