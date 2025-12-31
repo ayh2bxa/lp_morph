@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 
 #define MAX_ORDER 50
-#define MAX_FRAME_DUR 10
+#define MAX_FRAME_DUR 50
 
 using namespace juce;
 
