@@ -1,4 +1,5 @@
 #include "lpc.h"
+#include <fstream>
 
 LPC::LPC(int numChannels) {
     double maxFrameDurS = MAX_FRAME_DUR/1000.0;
@@ -27,6 +28,7 @@ LPC::LPC(int numChannels) {
     }
     phi.resize(ORDER+1);
     alphas.resize(ORDER+1);
+    reflectionCoeffs.resize(ORDER);
     orderedInBuf.resize(FRAMELEN);
     orderedScBuf.resize(FRAMELEN);
     window.resize(FRAMELEN);
@@ -59,6 +61,7 @@ LPC::LPC(int numChannels) {
     }
     phi[ORDER] = 0.0;
     reset_a();
+    DBG("DEBUGGING MODE");
 }
 
 //http://www.emptyloop.com/technotes/A%20tutorial%20on%20linear%20prediction%20and%20Levinson-Durbin.pdf
@@ -71,6 +74,13 @@ double LPC::levinson_durbin() {
             lbda += alphas[j] * phi[k + 1 - j];
         }
         lbda = -lbda / E;
+        reflectionCoeffs[k] = lbda;  // Store reflection coefficient
+        // Clamp reflection coefficient for stability
+        if (reflectionCoeffs[k] >= 1.0 || reflectionCoeffs[k] <= -1.0) {
+            DBG("clamping");
+            if (reflectionCoeffs[k] >= 1.0) reflectionCoeffs[k] = 0.999;
+            if (reflectionCoeffs[k] <= -1.0) reflectionCoeffs[k] = -0.999;
+        }
         int half = (k + 1) / 2;
         for (int n = 0; n <= half; n++) {
             double tmp = alphas[k + 1 - n] + lbda * alphas[n];
@@ -211,16 +221,20 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                         if (exPtr >= EXLEN) {
                             exPtr = 0;
                         }
-                        double out_n = G*ex;
-                        for (int k = 0; k < ORDER; k++) {
-                            int idx = (histPtr+k)%ORDER;
-                            out_n -= alphas[k+1]*out_hist[ch][idx];
+                        // Lattice filter synthesis
+                        double f = G * ex;
+                        for (int i = 0; i < ORDER; ++i) {
+                            double ki = reflectionCoeffs[i];
+                            double bPrev = out_hist[ch][i];  // delayed backward error
+
+                            // synthesis recursion
+                            double fPrev = f - ki * bPrev;
+                            double bNew = ki * fPrev + bPrev;
+
+                            out_hist[ch][i] = bNew;
+                            f = fPrev;
                         }
-                        histPtr--;
-                        if (histPtr < 0) {
-                            histPtr += ORDER;
-                        }
-                        out_hist[ch][histPtr] = out_n;
+                        double out_n = f;
                         unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
                         double preOlaVal = outBuf[ch][wtIdx];
                         // Change of frame length can cause OLA to add with unwanted audio
@@ -238,16 +252,20 @@ bool LPC::applyLPC(const float *input, float *output, int numSamples, float lpcM
                 else {
                     for (int n = 0; n < FRAMELEN; n++) {
                         double ex = orderedScBuf[n];
-                        double out_n = G*ex;
-                        for (int k = 0; k < ORDER; k++) {
-                            int idx = (histPtr+k)%ORDER;
-                            out_n -= alphas[k+1]*out_hist[ch][idx];
+                        // Lattice filter synthesis
+                        double f = G * ex;
+                        for (int i = 0; i < ORDER; ++i) {
+                            double ki = reflectionCoeffs[i];
+                            double bPrev = out_hist[ch][i];  // delayed backward error
+
+                            // synthesis recursion
+                            double fPrev = f - ki * bPrev;
+                            double bNew = ki * fPrev + bPrev;
+
+                            out_hist[ch][i] = bNew;
+                            f = fPrev;
                         }
-                        histPtr--;
-                        if (histPtr < 0) {
-                            histPtr += ORDER;
-                        }
-                        out_hist[ch][histPtr] = out_n;
+                        double out_n = f;
                         unsigned long wtIdx = (outWtPtr+n)%BUFLEN;
                         double preOlaVal = outBuf[ch][wtIdx];
                         if (n < HOPSIZE) {

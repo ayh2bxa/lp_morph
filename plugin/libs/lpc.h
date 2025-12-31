@@ -11,6 +11,7 @@ class LPC {
 private:
     vector<double> phi;
     vector<double> alphas;
+    vector<double> reflectionCoeffs;
     int inWtPtr;
     int outWtPtr;
     int outRdPtr;
